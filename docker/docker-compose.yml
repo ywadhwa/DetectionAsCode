@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  splunk:
+    image: splunk/splunk:latest
+    container_name: dac-splunk-test
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=ChangeMe123!
+      - SPLUNK_HEC_TOKEN=test-token-12345
+    ports:
+      - "8000:8000"  # Web UI
+      - "8088:8088"  # HEC (HTTP Event Collector)
+      - "8089:8089"  # Management port
+    volumes:
+      - splunk-data:/opt/splunk/var/lib/splunk
+      - splunk-etc:/opt/splunk/etc
+      - ./test-data:/opt/splunk/test-data:ro
+      - ../output/splunk:/opt/splunk/queries:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - dac-network
+
+  splunk-init:
+    image: curlimages/curl:latest
+    container_name: dac-splunk-init
+    depends_on:
+      splunk:
+        condition: service_healthy
+    volumes:
+      - ./init-scripts:/scripts:ro
+    entrypoint: /bin/sh
+    command: -c "sleep 60 && /scripts/load-test-data.sh || true"
+    networks:
+      - dac-network
+    profiles:
+      - init
+
+volumes:
+  splunk-data:
+  splunk-etc:
+
+networks:
+  dac-network:
+    driver: bridge

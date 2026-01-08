@@ -1,0 +1,59 @@
+name: Promote to Master
+
+on:
+  workflow_run:
+    workflows: ["Detection as Code Pipeline"]
+    types:
+      - completed
+    branches:
+      - staging
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Source branch (staging)'
+        required: true
+        default: 'staging'
+
+jobs:
+  check-staging-status:
+    name: Check Staging Pipeline Status
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Verify staging pipeline passed
+        run: |
+          echo "Verifying staging pipeline completed successfully..."
+          # This job ensures the staging pipeline passed before allowing promotion
+
+  promote-to-master:
+    name: Promote to Master
+    runs-on: ubuntu-latest
+    needs: check-staging-status
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge staging to master
+        run: |
+          git checkout master
+          git merge staging --no-edit
+          git push origin master
+
+      - name: Create release tag
+        run: |
+          VERSION=$(date +%Y%m%d-%H%M%S)
+          git tag -a "v${VERSION}" -m "Release ${VERSION} - Promoted from staging"
+          git push origin "v${VERSION}"

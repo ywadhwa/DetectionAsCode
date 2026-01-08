@@ -1,0 +1,46 @@
+# Detection as Code Configuration
+
+# Sigma rule settings
+sigma:
+  # Backends to convert to
+  backends:
+    - splunk
+    - kql
+  
+  # Rule categories
+  categories:
+    - endpoint
+    - cloud
+    - macos
+    - network
+    - web
+
+# Validation settings
+validation:
+  # Strict mode: fail on warnings
+  strict: false
+  
+  # Check for required fields
+  check_required_fields: true
+  
+  # Validate UUID format for rule IDs
+  validate_uuid: true
+
+# Conversion settings
+conversion:
+  # Output format
+  splunk:
+    format: splunk
+    include_metadata: true
+  
+  kql:
+    format: kql
+    include_metadata: true
+
+# Report settings
+reporting:
+  # Generate report after conversion
+  generate_report: true
+  
+  # Include statistics
+  include_stats: true

@@ -1,0 +1,29 @@
+title: Suspicious PowerShell Execution
+id: 12345678-1234-1234-1234-123456789012
+status: experimental
+description: Detects suspicious PowerShell execution patterns commonly used in attacks
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+author: Detection as Code Pipeline
+date: 2024/01/01
+modified: 2024/01/01
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.defense_evasion
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        Image|endswith: '\powershell.exe'
+        CommandLine|contains:
+            - '-enc'
+            - '-encodedcommand'
+            - '-e '
+            - 'bypass'
+            - 'hidden'
+    condition: selection
+falsepositives:
+    - Legitimate administrative scripts
+level: high

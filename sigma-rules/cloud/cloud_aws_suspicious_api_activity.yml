@@ -1,0 +1,31 @@
+title: AWS Suspicious API Activity
+id: 22345678-1234-1234-1234-123456789012
+status: experimental
+description: Detects suspicious AWS API calls that may indicate unauthorized access or data exfiltration
+references:
+    - https://attack.mitre.org/techniques/T1530/
+author: Detection as Code Pipeline
+date: 2024/01/01
+modified: 2024/01/01
+tags:
+    - attack.exfiltration
+    - attack.t1530
+    - cloud.aws
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection:
+        eventName|contains:
+            - 'GetObject'
+            - 'PutObject'
+            - 'DeleteObject'
+            - 'CreateSnapshot'
+            - 'CopySnapshot'
+        sourceIPAddress|re: '^(?!10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)'
+        userIdentity.type: 'IAMUser'
+    condition: selection
+falsepositives:
+    - Legitimate backup operations
+    - Scheduled maintenance tasks
+level: medium
