@@ -57,6 +57,7 @@ stages:
           - Agent.OS -equals Windows_NT
       dependsOn: Convert
 
+  # Test Splunk queries (only on staging and master branches)
   - template: azure-pipelines/templates/stages/test-splunk-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
@@ -70,3 +71,27 @@ stages:
       splunkUsername: 'admin'
       splunkPassword: 'ChangeMe123!'
       splunkIndex: 'test_data'
+
+  # Automatic branch promotion: dev → staging
+  # Triggers after Report stage succeeds on dev branch
+  - template: azure-pipelines/templates/stages/promote-branch-stage.yml
+    parameters:
+      sourceBranch: dev
+      targetBranch: staging
+      pool:
+        name: $(agentPoolName)
+        demands:
+          - Agent.OS -equals Windows_NT
+      dependsOn: Report
+
+  # Automatic branch promotion: staging → master
+  # Triggers after TestSplunk stage succeeds on staging branch
+  - template: azure-pipelines/templates/stages/promote-branch-stage.yml
+    parameters:
+      sourceBranch: staging
+      targetBranch: master
+      pool:
+        name: $(agentPoolName)
+        demands:
+          - Agent.OS -equals Windows_NT
+      dependsOn: TestSplunk

@@ -14,7 +14,8 @@ azure-pipelines/
 │       ├── lint-stage.yml
 │       ├── convert-stage.yml
 │       ├── report-stage.yml
-│       └── test-splunk-stage.yml
+│       ├── test-splunk-stage.yml
+│       └── promote-branch-stage.yml
 └── README.md
 ```
 
@@ -72,6 +73,22 @@ Tests Splunk queries against Docker Splunk instance.
 - `splunkPassword`: Splunk password
 - `splunkIndex`: Splunk index name (default: 'test_data')
 
+#### `promote-branch-stage.yml`
+Automatically promotes code between branches after successful validation.
+
+**Parameters:**
+- `sourceBranch`: Source branch to promote from (e.g., 'dev' or 'staging')
+- `targetBranch`: Target branch to promote to (e.g., 'staging' or 'master')
+- `pool`: Agent pool configuration
+- `dependsOn`: Stage name that must succeed before promotion (e.g., 'Report' or 'TestSplunk')
+
+**Behavior:**
+- Only runs when pipeline is triggered from `sourceBranch`
+- Waits for `dependsOn` stage to succeed
+- Merges `sourceBranch` into `targetBranch`
+- Creates a promotion tag
+- Requires Git credentials with write permissions
+
 ## Usage
 
 The main `azure-pipelines.yml` file orchestrates all stages by including these templates. To customize:
@@ -80,6 +97,29 @@ The main `azure-pipelines.yml` file orchestrates all stages by including these t
 2. **Modify stage behavior**: Edit the corresponding template file
 3. **Add new stages**: Create new template files and include them in the main pipeline
 
+## Branch Promotion Workflow
+
+The pipeline automatically promotes code between branches:
+
+1. **dev → staging**: After `Report` stage succeeds on `dev` branch
+   - All validation checks pass
+   - Queries generated successfully
+   - Report created
+   - Automatically merges `dev` into `staging`
+
+2. **staging → master**: After `TestSplunk` stage succeeds on `staging` branch
+   - All validation checks pass
+   - Splunk queries tested successfully
+   - Automatically merges `staging` into `master`
+
+**Requirements for Branch Promotion:**
+- Git credentials with write permissions (configured via `persistCredentials: true`)
+- Branch protection rules should allow pipeline to push
+- No merge conflicts (pipeline will fail if conflicts exist)
+
+**Promotion Tags:**
+Each promotion creates a tag: `promote-<targetBranch>-<timestamp>`
+
 ## Benefits
 
 - **Maintainability**: Each stage is isolated and easy to modify
@@ -87,3 +127,4 @@ The main `azure-pipelines.yml` file orchestrates all stages by including these t
 - **Testability**: Individual stages can be tested independently
 - **Readability**: Main pipeline file is clean and shows the flow
 - **Flexibility**: Easy to enable/disable stages or modify parameters
+- **Automation**: Automatic branch promotion reduces manual intervention

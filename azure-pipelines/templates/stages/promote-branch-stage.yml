@@ -1,0 +1,107 @@
+# Stage template for automatic branch promotion
+# Promotes code from dev → staging → master after successful validation
+parameters:
+  sourceBranch: ''  # Branch to promote from (dev or staging)
+  targetBranch: ''  # Branch to promote to (staging or master)
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+  dependsOn: ''  # Stage name that must succeed before promotion (e.g., 'Report' or 'TestSplunk')
+
+stages:
+  - stage: Promote${{ parameters.targetBranch }}
+    displayName: 'Promote to ${{ parameters.targetBranch }}'
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/${{ parameters.sourceBranch }}')
+      )
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: PromoteBranch
+        displayName: 'Promote ${{ parameters.sourceBranch }} → ${{ parameters.targetBranch }}'
+        steps:
+          - checkout: self
+            persistCredentials: true
+            fetchDepth: 0
+
+          - task: PowerShell@2
+            displayName: 'Configure Git'
+            inputs:
+              targetType: 'inline'
+              script: |
+                git config user.name "Azure DevOps Pipeline"
+                git config user.email "azure-pipelines@noreply.microsoft.com"
+                git config --global credential.helper store
+
+          - task: PowerShell@2
+            displayName: 'Checkout source branch'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Current branch: $(Build.SourceBranch)"
+                Write-Host "Source branch: refs/heads/${{ parameters.sourceBranch }}"
+                Write-Host "Target branch: ${{ parameters.targetBranch }}"
+                
+                # Ensure we're on the source branch
+                git checkout ${{ parameters.sourceBranch }}
+                git pull origin ${{ parameters.sourceBranch }}
+
+          - task: PowerShell@2
+            displayName: 'Checkout and merge to target branch'
+            inputs:
+              targetType: 'inline'
+              script: |
+                # Fetch all branches
+                git fetch origin
+                
+                # Checkout target branch
+                git checkout ${{ parameters.targetBranch }}
+                git pull origin ${{ parameters.targetBranch }}
+                
+                # Merge source branch into target
+                Write-Host "Merging ${{ parameters.sourceBranch }} into ${{ parameters.targetBranch }}..."
+                $mergeResult = git merge ${{ parameters.sourceBranch }} --no-edit --no-ff
+                
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Merge conflict detected. Attempting to resolve..."
+                  # Check if it's just a conflict that can be auto-resolved
+                  git merge --abort
+                  Write-Error "Merge failed. Manual intervention required."
+                  exit 1
+                }
+                
+                Write-Host "Merge successful!"
+
+          - task: PowerShell@2
+            displayName: 'Push to target branch'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Pushing ${{ parameters.targetBranch }} branch..."
+                git push origin ${{ parameters.targetBranch }}
+                
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "Successfully promoted ${{ parameters.sourceBranch }} → ${{ parameters.targetBranch }}"
+                } else {
+                  Write-Error "Failed to push to ${{ parameters.targetBranch }}"
+                  exit 1
+                }
+
+          - task: PowerShell@2
+            displayName: 'Create promotion tag'
+            condition: succeeded()
+            inputs:
+              targetType: 'inline'
+              script: |
+                $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+                $tagName = "promote-${{ parameters.targetBranch }}-$timestamp"
+                $tagMessage = "Promoted from ${{ parameters.sourceBranch }} to ${{ parameters.targetBranch }} on $timestamp"
+                
+                Write-Host "Creating tag: $tagName"
+                git tag -a $tagName -m $tagMessage
+                git push origin $tagName
+                
+                Write-Host "Tag created and pushed successfully"
