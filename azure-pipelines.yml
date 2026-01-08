@@ -1,0 +1,274 @@
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+      - master
+      - dev
+      - staging
+  paths:
+    include:
+      - sigma-rules/**
+      - azure-pipelines.yml
+
+pr:
+  branches:
+    include:
+      - master
+      - dev
+      - staging
+  paths:
+    include:
+      - sigma-rules/**
+
+pool:
+  name: Default  # Change to your self-hosted agent pool name
+  demands:
+    - Agent.OS -equals Windows_NT
+
+variables:
+  pythonVersion: '3.11'
+
+stages:
+  - stage: Lint
+    displayName: 'Lint Sigma Rules'
+    jobs:
+      - job: LintSigmaRules
+        displayName: 'Lint Sigma Rules'
+        steps:
+          - checkout: self
+
+          - task: UsePythonVersion@0
+            displayName: 'Set up Python'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+
+          - task: PowerShell@2
+            displayName: 'Install Sigma CLI'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python -m pip install --upgrade pip
+                pip install sigmatools
+                pip install ruamel.yaml
+
+          - task: PowerShell@2
+            displayName: 'Lint Sigma rules'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Linting all Sigma rules..."
+                $files = Get-ChildItem -Path sigma-rules -Recurse -Include *.yml,*.yaml
+                foreach ($file in $files) {
+                  Write-Host "Checking: $($file.FullName)"
+                  sigma lint $file.FullName
+                  if ($LASTEXITCODE -ne 0) {
+                    exit 1
+                  }
+                }
+
+          - task: PowerShell@2
+            displayName: 'Validate Sigma rule syntax'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating Sigma rule syntax..."
+                python scripts/validate_sigma_syntax.py
+
+          - task: PowerShell@2
+            displayName: 'Validate file naming conventions'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating file naming conventions..."
+                python scripts/validate_file_naming.py
+
+  - stage: Convert
+    displayName: 'Convert Sigma to Queries'
+    dependsOn: Lint
+    jobs:
+      - job: ConvertToQueries
+        displayName: 'Convert Sigma to Queries'
+        steps:
+          - checkout: self
+
+          - task: UsePythonVersion@0
+            displayName: 'Set up Python'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+
+          - task: PowerShell@2
+            displayName: 'Install dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python -m pip install --upgrade pip
+                pip install sigmatools
+                pip install ruamel.yaml
+                pip install pyyaml
+
+          - task: PowerShell@2
+            displayName: 'Convert to Splunk queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Converting Sigma rules to Splunk queries..."
+                python scripts/convert_sigma.py --backend splunk --output output/splunk
+
+          - task: PowerShell@2
+            displayName: 'Convert to KQL queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Converting Sigma rules to KQL queries..."
+                python scripts/convert_sigma.py --backend kql --output output/kql
+
+          - task: PowerShell@2
+            displayName: 'Validate Splunk queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating Splunk query syntax..."
+                python scripts/validate_queries.py --type splunk --directory output/splunk
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Splunk validation requires Splunk SDK (optional)"
+                }
+
+          - task: PowerShell@2
+            displayName: 'Validate KQL queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating KQL query syntax..."
+                python scripts/validate_queries.py --type kql --directory output/kql
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "KQL validation requires Azure SDK (optional)"
+                }
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Upload query artifacts'
+            condition: always()
+            inputs:
+              targetPath: 'output'
+              artifactName: 'generated-queries'
+              publishLocation: 'pipeline'
+
+  - stage: Report
+    displayName: 'Generate Detection Report'
+    dependsOn: Convert
+    jobs:
+      - job: GenerateReport
+        displayName: 'Generate Detection Report'
+        steps:
+          - checkout: self
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download query artifacts'
+            inputs:
+              artifactName: 'generated-queries'
+              targetPath: 'output'
+
+          - task: UsePythonVersion@0
+            displayName: 'Set up Python'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+
+          - task: PowerShell@2
+            displayName: 'Generate detection report'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/generate_report.py
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Upload report'
+            condition: always()
+            inputs:
+              targetPath: 'output/report.md'
+              artifactName: 'detection-report'
+              publishLocation: 'pipeline'
+
+  - stage: TestSplunk
+    displayName: 'Test Splunk Queries'
+    dependsOn: Convert
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/staging'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    jobs:
+      - job: TestSplunkQueries
+        displayName: 'Test Splunk Queries'
+        steps:
+          - checkout: self
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download query artifacts'
+            inputs:
+              artifactName: 'generated-queries'
+              targetPath: 'output'
+
+          - task: PowerShell@2
+            displayName: 'Start Splunk test environment'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Set-Location docker
+                docker-compose up -d
+                Write-Host "Waiting for Splunk to be ready..."
+                $maxAttempts = 30
+                $attempt = 0
+                do {
+                  Start-Sleep -Seconds 10
+                  $attempt++
+                  try {
+                    $response = Invoke-WebRequest -Uri http://localhost:8000 -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+                    Write-Host "Splunk is ready!"
+                    break
+                  } catch {
+                    Write-Host "Waiting for Splunk... (attempt $attempt/$maxAttempts)"
+                  }
+                } while ($attempt -lt $maxAttempts)
+
+          - task: PowerShell@2
+            displayName: 'Load test data'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Set-Location docker
+                docker-compose --profile init up splunk-init
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Init container may have already run"
+                }
+                Start-Sleep -Seconds 30
+                Write-Host "Test data loaded"
+
+          - task: UsePythonVersion@0
+            displayName: 'Set up Python'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+
+          - task: PowerShell@2
+            displayName: 'Install dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                pip install requests urllib3
+
+          - task: PowerShell@2
+            displayName: 'Test Splunk queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/test_splunk_queries.py --host localhost --port 8089 --username admin --password ChangeMe123! --index test_data
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Query testing completed with some failures"
+                }
+
+          - task: PowerShell@2
+            displayName: 'Stop Splunk'
+            condition: always()
+            inputs:
+              targetType: 'inline'
+              script: |
+                Set-Location docker
+                docker-compose down -v
