@@ -1,0 +1,44 @@
+# Stage template for generating detection report
+parameters:
+  pythonVersion: '3.11'
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+  dependsOn: Convert
+
+stages:
+  - stage: Report
+    displayName: 'Generate Detection Report'
+    dependsOn: ${{ parameters.dependsOn }}
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: GenerateReport
+        displayName: 'Generate Detection Report'
+        steps:
+          - checkout: self
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download query artifacts'
+            inputs:
+              artifactName: 'generated-queries'
+              targetPath: 'output'
+
+          - template: ../jobs/python-setup.yml
+            parameters:
+              pythonVersion: ${{ parameters.pythonVersion }}
+
+          - task: PowerShell@2
+            displayName: 'Generate detection report'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/generate_report.py
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Upload report'
+            condition: always()
+            inputs:
+              targetPath: 'output/report.md'
+              artifactName: 'detection-report'
+              publishLocation: 'pipeline'

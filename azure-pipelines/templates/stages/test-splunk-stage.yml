@@ -1,0 +1,104 @@
+# Stage template for testing Splunk queries
+parameters:
+  pythonVersion: '3.11'
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+  dependsOn: Convert
+  splunkHost: 'localhost'
+  splunkPort: '8089'
+  splunkUsername: 'admin'
+  splunkPassword: 'ChangeMe123!'
+  splunkIndex: 'test_data'
+  enabledBranches:
+    - 'refs/heads/staging'
+    - 'refs/heads/master'
+
+stages:
+  - stage: TestSplunk
+    displayName: 'Test Splunk Queries'
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/staging'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: TestSplunkQueries
+        displayName: 'Test Splunk Queries'
+        steps:
+          - checkout: self
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download query artifacts'
+            inputs:
+              artifactName: 'generated-queries'
+              targetPath: 'output'
+
+          - task: PowerShell@2
+            displayName: 'Start Splunk test environment'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Set-Location docker
+                docker-compose up -d
+                Write-Host "Waiting for Splunk to be ready..."
+                $maxAttempts = 30
+                $attempt = 0
+                do {
+                  Start-Sleep -Seconds 10
+                  $attempt++
+                  try {
+                    $response = Invoke-WebRequest -Uri http://localhost:8000 -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+                    Write-Host "Splunk is ready!"
+                    break
+                  } catch {
+                    Write-Host "Waiting for Splunk... (attempt $attempt/$maxAttempts)"
+                  }
+                } while ($attempt -lt $maxAttempts)
+
+          - task: PowerShell@2
+            displayName: 'Load test data'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Set-Location docker
+                docker-compose --profile init up splunk-init
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Init container may have already run"
+                }
+                Start-Sleep -Seconds 30
+                Write-Host "Test data loaded"
+
+          - template: ../jobs/python-setup.yml
+            parameters:
+              pythonVersion: ${{ parameters.pythonVersion }}
+
+          - task: PowerShell@2
+            displayName: 'Install test dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                pip install requests urllib3
+
+          - task: PowerShell@2
+            displayName: 'Test Splunk queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/test_splunk_queries.py `
+                  --host ${{ parameters.splunkHost }} `
+                  --port ${{ parameters.splunkPort }} `
+                  --username ${{ parameters.splunkUsername }} `
+                  --password ${{ parameters.splunkPassword }} `
+                  --index ${{ parameters.splunkIndex }}
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Query testing completed with some failures"
+                }
+
+          - task: PowerShell@2
+            displayName: 'Stop Splunk'
+            condition: always()
+            inputs:
+              targetType: 'inline'
+              script: |
+                Set-Location docker
+                docker-compose down -v

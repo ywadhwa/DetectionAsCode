@@ -1,0 +1,59 @@
+# Stage template for linting Sigma rules
+parameters:
+  pythonVersion: '3.11'
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+
+stages:
+  - stage: Lint
+    displayName: 'Lint Sigma Rules'
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: LintSigmaRules
+        displayName: 'Lint Sigma Rules'
+        steps:
+          - template: ../jobs/python-setup.yml
+            parameters:
+              pythonVersion: ${{ parameters.pythonVersion }}
+
+          - task: PowerShell@2
+            displayName: 'Install Sigma CLI'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python -m pip install --upgrade pip
+                pip install sigmatools
+                pip install ruamel.yaml
+
+          - task: PowerShell@2
+            displayName: 'Lint Sigma rules'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Linting all Sigma rules..."
+                $files = Get-ChildItem -Path sigma-rules -Recurse -Include *.yml,*.yaml
+                foreach ($file in $files) {
+                  Write-Host "Checking: $($file.FullName)"
+                  sigma lint $file.FullName
+                  if ($LASTEXITCODE -ne 0) {
+                    exit 1
+                  }
+                }
+
+          - task: PowerShell@2
+            displayName: 'Validate Sigma rule syntax'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating Sigma rule syntax..."
+                python scripts/validate_sigma_syntax.py
+
+          - task: PowerShell@2
+            displayName: 'Validate file naming conventions'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating file naming conventions..."
+                python scripts/validate_file_naming.py
