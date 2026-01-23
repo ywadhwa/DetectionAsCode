@@ -7,9 +7,12 @@ A Detection as Code (DaC) pipeline for managing Sigma rules with automated linti
 - Sigma rule management organized by category (endpoint, cloud, macOS, network, web)
 - File naming validation (`<category>_<name>.yml`)
 - Automated linting and syntax checking
+- Metadata and detection quality validation (log source coverage, false positives, ATT&CK mappings)
 - Query generation for Splunk and KQL
 - Docker-based Splunk testing
+- Azure Data Explorer (KQL) validation hooks
 - CI/CD integration with GitHub Actions (dev → staging → master)
+- Web UI to submit Sigma rules and open pull requests
 
 ## Quick Start
 
@@ -36,6 +39,8 @@ vim sigma-rules/endpoint/endpoint_suspicious_powershell.yml
 # Validate naming and syntax
 python scripts/validate_file_naming.py
 python scripts/validate_sigma_syntax.py
+python scripts/validate_rule_metadata.py
+python scripts/validate_detection_quality.py
 
 # Convert to queries
 python scripts/convert_sigma.py --backend splunk
@@ -52,11 +57,32 @@ python scripts/validate_queries.py --type kql --directory output/kql
 cd docker
 docker-compose up -d
 docker-compose --profile init up splunk-init
-python scripts/test_splunk_queries.py
+python scripts/test_splunk_queries.py --expectations tests/expected_matches.yml
 docker-compose down
 ```
 
 See [Docker README](docker/README.md) for details.
+
+### Test with Azure Data Explorer (Optional)
+
+```bash
+export KUSTO_CLUSTER="https://<cluster>.kusto.windows.net"
+export KUSTO_DATABASE="detections_test"
+export KUSTO_TOKEN="<aad token>"
+python scripts/test_kql_queries.py --directory output/kql --expectations tests/expected_matches.yml
+```
+
+### Web UI
+
+```bash
+pip install -r requirements.txt
+export GITHUB_TOKEN="<token>"
+export GITHUB_REPO="org/repo"
+export GITHUB_DEFAULT_BRANCH="dev"
+python ui/app.py
+```
+
+The UI is available at `http://localhost:5000` and will open a pull request on submission.
 
 ## GitHub Actions Workflow
 
@@ -117,8 +143,11 @@ python scripts/generate_report.py
 - **Sigma CLI not found**: `pip install sigmatools`
 - **Conversion fails**: Check Sigma syntax, required fields, and review `output/*/` error files
 - **Query validation**: Basic checks syntax only; use Splunk SDK or Azure Log Analytics for full validation
+- **KQL testing**: Ensure `KUSTO_CLUSTER`, `KUSTO_DATABASE`, and `KUSTO_TOKEN` are configured
 
 ## Resources
 
 - [Sigma Specification](https://github.com/SigmaHQ/sigma)
 - [MITRE ATT&CK](https://attack.mitre.org/)
+- [Detection-as-Code Architecture](docs/architecture.md)
+- [Git Workflow & Branching Strategy](docs/git-workflow.md)
