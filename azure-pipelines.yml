@@ -4,9 +4,8 @@
 trigger:
   branches:
     include:
-      - master
-      - dev
-      - staging
+      - main
+      - develop
   paths:
     include:
       - sigma-rules/**
@@ -22,9 +21,8 @@ trigger:
 pr:
   branches:
     include:
-      - master
-      - dev
-      - staging
+      - main
+      - develop
   paths:
     include:
       - sigma-rules/**
@@ -78,7 +76,7 @@ stages:
           - Agent.OS -equals Windows_NT
       dependsOn: Report
 
-  # Test Splunk queries (only on staging and master branches)
+  # Test Splunk queries (on develop and main branches)
   - template: azure-pipelines/templates/stages/test-splunk-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
@@ -93,7 +91,7 @@ stages:
       splunkPassword: 'ChangeMe123!'
       splunkIndex: 'test_data'
 
-  # Test KQL queries against Azure Data Explorer (only on staging and master branches)
+  # Test KQL queries against Azure Data Explorer (on develop and main branches)
   - template: azure-pipelines/templates/stages/test-kql-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
@@ -106,24 +104,12 @@ stages:
       kustoDatabase: $(KUSTO_DATABASE)
       kustoToken: $(KUSTO_TOKEN)
 
-  # Automatic branch promotion: dev → staging
-  # Triggers after Report stage succeeds on dev branch
+  # Automatic branch promotion: develop → main
+  # Triggers after TestSplunk and TestKql stages succeed on develop branch
   - template: azure-pipelines/templates/stages/promote-branch-stage.yml
     parameters:
-      sourceBranch: dev
-      targetBranch: staging
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
-      dependsOn: Report
-
-  # Automatic branch promotion: staging → master
-  # Triggers after TestSplunk and TestKql stages succeed on staging branch
-  - template: azure-pipelines/templates/stages/promote-branch-stage.yml
-    parameters:
-      sourceBranch: staging
-      targetBranch: master
+      sourceBranch: develop
+      targetBranch: main
       pool:
         name: $(agentPoolName)
         demands:

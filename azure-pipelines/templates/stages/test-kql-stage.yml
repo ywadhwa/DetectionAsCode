@@ -10,14 +10,14 @@ parameters:
   kustoDatabase: ''
   kustoToken: ''
   enabledBranches:
-    - 'refs/heads/staging'
-    - 'refs/heads/master'
+    - 'refs/heads/develop'
+    - 'refs/heads/main'
 
 stages:
   - stage: TestKql
     displayName: 'Test KQL Queries'
     dependsOn: ${{ parameters.dependsOn }}
-    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/staging'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
     pool: ${{ parameters.pool }}
     jobs:
       - job: TestKqlQueries
