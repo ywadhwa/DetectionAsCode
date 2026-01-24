@@ -77,7 +77,8 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                pip install requests urllib3
+                pip install requests urllib3 pyyaml
+                pip install -r requirements.txt
 
           - task: PowerShell@2
             displayName: 'Test Splunk queries'
@@ -89,7 +90,8 @@ stages:
                   --port ${{ parameters.splunkPort }} `
                   --username ${{ parameters.splunkUsername }} `
                   --password ${{ parameters.splunkPassword }} `
-                  --index ${{ parameters.splunkIndex }}
+                  --index ${{ parameters.splunkIndex }} `
+                  --expectations tests/expected_matches.yml
                 if ($LASTEXITCODE -ne 0) {
                   Write-Host "Query testing completed with some failures"
                 }

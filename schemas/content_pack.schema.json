@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Content Pack",
+  "type": "object",
+  "required": ["name", "version", "detections"],
+  "properties": {
+    "name": {"type": "string"},
+    "version": {"type": "string"},
+    "owner": {"type": "string"},
+    "description": {"type": "string"},
+    "detections": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

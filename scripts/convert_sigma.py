@@ -7,7 +7,22 @@ import sys
 import argparse
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import yaml
+
+def _load_conversion_targets(rule_path: Path) -> Optional[List[str]]:
+    try:
+        with open(rule_path, 'r', encoding='utf-8') as handle:
+            data = yaml.safe_load(handle) or {}
+        targets = data.get("conversion_targets")
+        if targets is None:
+            return None
+        if isinstance(targets, list):
+            return [str(target).lower() for target in targets]
+        return None
+    except Exception:
+        return None
+
 
 def convert_sigma_rule(rule_path: Path, backend: str, output_dir: Path) -> bool:
     """
@@ -22,6 +37,20 @@ def convert_sigma_rule(rule_path: Path, backend: str, output_dir: Path) -> bool:
         True if conversion successful, False otherwise
     """
     try:
+        conversion_targets = _load_conversion_targets(rule_path)
+        if conversion_targets is not None and backend not in conversion_targets:
+            output_file = output_dir / rule_path.relative_to(
+                Path(__file__).parent.parent / "sigma-rules"
+            ).parent / f"{rule_path.stem}.{backend}"
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            metadata_file = output_file.with_suffix(f".{backend}.meta")
+            with open(metadata_file, 'w', encoding='utf-8') as f:
+                f.write(f"Source: {rule_path}\n")
+                f.write(f"Backend: {backend}\n")
+                f.write("Status: Skipped (target not selected)\n")
+            print(f"  ↷ Skipping {rule_path.name} (conversion_targets excludes {backend})")
+            return True
+
         # Create output directory structure mirroring input
         relative_path = rule_path.relative_to(Path(__file__).parent.parent / "sigma-rules")
         output_file = output_dir / relative_path.parent / f"{rule_path.stem}.{backend}"

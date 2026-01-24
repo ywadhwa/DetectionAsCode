@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sigma Rule",
+  "type": "object",
+  "required": ["title", "id", "status", "description", "author", "date", "logsource", "detection", "level", "version"],
+  "properties": {
+    "title": {"type": "string", "minLength": 3},
+    "id": {"type": "string"},
+    "status": {"type": "string"},
+    "description": {"type": "string", "minLength": 10},
+    "author": {"type": "string"},
+    "date": {"type": "string"},
+    "modified": {"type": "string"},
+    "references": {"type": "array", "items": {"type": "string"}},
+    "tags": {"type": "array", "items": {"type": "string"}},
+    "logsource": {"type": "object"},
+    "detection": {"type": "object"},
+    "falsepositives": {"type": "array", "items": {"type": "string"}},
+    "level": {"type": "string"},
+    "version": {"type": "string"},
+    "content_pack": {"type": "string"},
+    "conversion_targets": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

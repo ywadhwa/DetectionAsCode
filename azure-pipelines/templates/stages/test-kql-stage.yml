@@ -1,0 +1,60 @@
+# Stage template for testing KQL queries against Azure Data Explorer
+parameters:
+  pythonVersion: '3.11'
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+  dependsOn: Convert
+  kustoCluster: ''
+  kustoDatabase: ''
+  kustoToken: ''
+  enabledBranches:
+    - 'refs/heads/staging'
+    - 'refs/heads/master'
+
+stages:
+  - stage: TestKql
+    displayName: 'Test KQL Queries'
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/staging'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: TestKqlQueries
+        displayName: 'Test KQL Queries'
+        steps:
+          - checkout: self
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download query artifacts'
+            inputs:
+              artifactName: 'generated-queries'
+              targetPath: 'output'
+
+          - template: ../jobs/python-setup.yml
+            parameters:
+              pythonVersion: ${{ parameters.pythonVersion }}
+
+          - task: PowerShell@2
+            displayName: 'Install test dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                pip install requests pyyaml
+                pip install -r requirements.txt
+
+          - task: PowerShell@2
+            displayName: 'Test KQL queries'
+            inputs:
+              targetType: 'inline'
+              script: |
+                if (-not '${{ parameters.kustoCluster }}' -or -not '${{ parameters.kustoDatabase }}' -or -not '${{ parameters.kustoToken }}') {
+                  Write-Error "Kusto connection parameters are required"
+                  exit 1
+                }
+                python scripts/test_kql_queries.py `
+                  --cluster "${{ parameters.kustoCluster }}" `
+                  --database "${{ parameters.kustoDatabase }}" `
+                  --token "${{ parameters.kustoToken }}" `
+                  --directory output/kql `
+                  --expectations tests/expected_matches.yml

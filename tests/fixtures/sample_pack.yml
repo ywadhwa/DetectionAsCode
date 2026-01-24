@@ -1,0 +1,6 @@
+name: sample-pack
+version: 1.0.1
+owner: Test
+description: Sample pack.
+detections:
+  - sigma-rules/endpoint/endpoint_suspicious_powershell.yml
