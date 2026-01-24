@@ -14,6 +14,7 @@ A Detection as Code (DaC) pipeline for managing Sigma rules with automated linti
 - Docker-based Splunk testing
 - Azure Data Explorer (KQL) validation hooks
 - CI/CD integration with GitHub Actions (dev → staging → master)
+- Web UI to submit Sigma rules and open pull requests
 
 ## Quick Start
 

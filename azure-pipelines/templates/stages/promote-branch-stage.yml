@@ -1,8 +1,8 @@
 # Stage template for automatic branch promotion
-# Promotes code from dev → staging → master after successful validation
+# Promotes code from develop → main after successful validation
 parameters:
-  sourceBranch: ''  # Branch to promote from (dev or staging)
-  targetBranch: ''  # Branch to promote to (staging or master)
+  sourceBranch: ''  # Branch to promote from (develop)
+  targetBranch: ''  # Branch to promote to (main)
   pool:
     name: Default
     demands:

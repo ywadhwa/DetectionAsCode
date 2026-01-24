@@ -77,8 +77,8 @@ Tests Splunk queries against Docker Splunk instance.
 Automatically promotes code between branches after successful validation.
 
 **Parameters:**
-- `sourceBranch`: Source branch to promote from (e.g., 'dev' or 'staging')
-- `targetBranch`: Target branch to promote to (e.g., 'staging' or 'master')
+- `sourceBranch`: Source branch to promote from (e.g., 'develop')
+- `targetBranch`: Target branch to promote to (e.g., 'main')
 - `pool`: Agent pool configuration
 - `dependsOn`: Stage name that must succeed before promotion (e.g., 'Report' or 'TestSplunk')
 
@@ -101,16 +101,11 @@ The main `azure-pipelines.yml` file orchestrates all stages by including these t
 
 The pipeline automatically promotes code between branches:
 
-1. **dev → staging**: After `Report` stage succeeds on `dev` branch
+1. **develop → main**: After `TestSplunk` and `TestKql` stages succeed on `develop` branch
    - All validation checks pass
    - Queries generated successfully
-   - Report created
-   - Automatically merges `dev` into `staging`
-
-2. **staging → master**: After `TestSplunk` stage succeeds on `staging` branch
-   - All validation checks pass
-   - Splunk queries tested successfully
-   - Automatically merges `staging` into `master`
+   - Splunk and KQL queries tested successfully
+   - Automatically merges `develop` into `main`
 
 **Requirements for Branch Promotion:**
 - Git credentials with write permissions (configured via `persistCredentials: true`)

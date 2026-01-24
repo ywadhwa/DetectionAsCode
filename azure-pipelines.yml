@@ -4,9 +4,8 @@
 trigger:
   branches:
     include:
-      - master
-      - dev
-      - staging
+      - main
+      - develop
   paths:
     include:
       - sigma-rules/**
@@ -22,9 +21,8 @@ trigger:
 pr:
   branches:
     include:
-      - master
-      - dev
-      - staging
+      - main
+      - develop
   paths:
     include:
       - sigma-rules/**
@@ -38,7 +36,7 @@ pr:
 variables:
   pythonVersion: '3.11'
   # Pool configuration for self-hosted Windows agent
-  # Change 'Default' to your actual agent pool name
+  # Using 'Default' agent pool
   agentPoolName: 'Default'
 
 # Include all stage templates
@@ -110,20 +108,33 @@ stages:
   # Triggers after Report stage succeeds on dev branch
   - template: azure-pipelines/templates/stages/promote-branch-stage.yml
     parameters:
-      sourceBranch: dev
-      targetBranch: staging
+      pythonVersion: $(pythonVersion)
       pool:
         name: $(agentPoolName)
         demands:
           - Agent.OS -equals Windows_NT
-      dependsOn: Report
+      dependsOn: Convert
+      kustoCluster: $(KUSTO_CLUSTER)
+      kustoDatabase: $(KUSTO_DATABASE)
+      kustoToken: $(KUSTO_TOKEN)
 
   # Automatic branch promotion: staging → master
   # Triggers after TestSplunk and TestKql stages succeed on staging branch
   - template: azure-pipelines/templates/stages/promote-branch-stage.yml
     parameters:
-      sourceBranch: staging
-      targetBranch: master
+      sourceBranch: develop
+      targetBranch: main
+      pool:
+        name: $(agentPoolName)
+        demands:
+          - Agent.OS -equals Windows_NT
+      dependsOn:
+        - TestSplunk
+        - TestKql
+
+  - template: azure-pipelines/templates/stages/deploy-stage.yml
+    parameters:
+      pythonVersion: $(pythonVersion)
       pool:
         name: $(agentPoolName)
         demands:
