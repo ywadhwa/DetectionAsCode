@@ -1,0 +1,22 @@
+splunk:
+  output/splunk/endpoint/endpoint_suspicious_powershell.splunk:
+    min: 1
+  output/splunk/cloud/cloud_aws_suspicious_api_activity.splunk:
+    min: 1
+  output/splunk/network/network_suspicious_dns_queries.splunk:
+    min: 1
+  output/splunk/web/web_webshell_upload_detection.splunk:
+    min: 1
+  output/splunk/macos/macos_suspicious_process_execution.splunk:
+    min: 1
+kql:
+  output/kql/endpoint/endpoint_suspicious_powershell.kql:
+    min: 1
+  output/kql/cloud/cloud_aws_suspicious_api_activity.kql:
+    min: 1
+  output/kql/network/network_suspicious_dns_queries.kql:
+    min: 1
+  output/kql/web/web_webshell_upload_detection.kql:
+    min: 1
+  output/kql/macos/macos_suspicious_process_execution.kql:
+    min: 1

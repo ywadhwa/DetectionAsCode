@@ -11,6 +11,9 @@ tags:
     - attack.persistence
     - attack.t1505.003
     - web.webshell
+conversion_targets:
+    - kql
+    - splunk
 logsource:
     product: webserver
     category: http_access

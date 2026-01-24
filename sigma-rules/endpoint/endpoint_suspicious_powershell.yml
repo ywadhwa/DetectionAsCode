@@ -11,6 +11,9 @@ tags:
     - attack.execution
     - attack.t1059.001
     - attack.defense_evasion
+conversion_targets:
+    - kql
+    - splunk
 logsource:
     product: windows
     category: process_creation

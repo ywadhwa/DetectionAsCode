@@ -7,6 +7,7 @@ import sys
 import argparse
 import requests
 import time
+import yaml
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 import urllib3
@@ -102,13 +103,22 @@ def execute_splunk_query(
     except Exception as e:
         return False, {"error": f"Unexpected error: {str(e)}"}
 
+def load_expectations(expectations_file: Path, query_type: str) -> Dict[str, Dict[str, int]]:
+    if not expectations_file.exists():
+        return {}
+    with open(expectations_file, "r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    return data.get(query_type, {}) if isinstance(data, dict) else {}
+
+
 def test_query_file(
     query_file: Path,
     host: str = "localhost",
     port: int = 8089,
     username: str = "admin",
     password: str = "ChangeMe123!",
-    index: str = "test_data"
+    index: str = "test_data",
+    expectations: Dict[str, Dict[str, int]] | None = None,
 ) -> Tuple[bool, Dict[str, Any]]:
     """
     Test a single query file.
@@ -132,7 +142,22 @@ def test_query_file(
         
         query = ' '.join(query_lines)
         
-        return execute_splunk_query(query, host, port, username, password, index)
+        success, result = execute_splunk_query(query, host, port, username, password, index)
+        if not success:
+            return False, result
+
+        if expectations:
+            expected = expectations.get(str(query_file)) or expectations.get(query_file.name)
+            if expected:
+                result_count = result.get("result_count", 0)
+                min_results = expected.get("min", 0)
+                max_results = expected.get("max")
+                if result_count < min_results:
+                    return False, {"error": f"Expected at least {min_results} results, got {result_count}"}
+                if max_results is not None and result_count > max_results:
+                    return False, {"error": f"Expected at most {max_results} results, got {result_count}"}
+
+        return True, result
     
     except Exception as e:
         return False, {"error": f"Error reading query file: {str(e)}"}
@@ -181,11 +206,20 @@ def main():
         type=str,
         help="Test a specific query file"
     )
+    parser.add_argument(
+        "--expectations",
+        type=str,
+        default="tests/expected_matches.yml",
+        help="Expectations file for result counts"
+    )
     
     args = parser.parse_args()
     
     query_dir = Path(__file__).parent.parent / args.directory
     
+    expectations_file = Path(__file__).parent.parent / args.expectations
+    expectations = load_expectations(expectations_file, "splunk")
+
     if args.query:
         query_files = [Path(args.query)]
     else:
@@ -219,7 +253,8 @@ def main():
             args.port,
             args.username,
             args.password,
-            args.index
+            args.index,
+            expectations
         )
         
         if success:
