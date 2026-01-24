@@ -41,6 +41,7 @@ stages:
               targetType: 'inline'
               script: |
                 pip install requests pyyaml
+                pip install -r requirements.txt
 
           - task: PowerShell@2
             displayName: 'Test KQL queries'

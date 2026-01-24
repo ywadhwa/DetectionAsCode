@@ -31,6 +31,7 @@ def validate_metadata(rule: Dict[str, object]) -> List[str]:
         "detection",
         "level",
         "falsepositives",
+        "version",
     ]
 
     for field in required_fields:
@@ -67,6 +68,10 @@ def validate_metadata(rule: Dict[str, object]) -> List[str]:
     falsepositives = rule.get("falsepositives")
     if falsepositives is not None and not isinstance(falsepositives, list):
         errors.append("falsepositives must be a list")
+
+    version = rule.get("version")
+    if version and not re.match(r"^\\d+\\.\\d+\\.\\d+$", str(version)):
+        errors.append("version must follow semantic versioning (e.g., 1.2.3)")
 
     conversion_targets = rule.get("conversion_targets")
     if conversion_targets is not None:

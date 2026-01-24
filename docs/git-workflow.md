@@ -69,6 +69,7 @@ hotfix/*  ----------+------------------------------> main
 
 - **Semantic versioning**: `v<major>.<minor>.<patch>`
 - **Release tags** are applied on `main` after merge from `release/*`.
+- **Deployment tags** follow `release-<version>` to trigger CD workflows.
 - **Patch releases** originate from `hotfix/*` and bump `patch`.
 - **Minor releases** aggregate new detections from `develop`.
 - **Major releases** reserved for breaking changes in rule schema or pipeline behavior.

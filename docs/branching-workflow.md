@@ -65,3 +65,4 @@
 - Only `main` and `develop` are long-lived protected branches.
 - All changes must flow through PRs.
 - Release tags are applied on `main` after merge.
+- Use `release-<version>` tags to trigger deployments.

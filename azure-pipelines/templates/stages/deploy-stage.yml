@@ -1,0 +1,52 @@
+# Stage template for deployment
+parameters:
+  pythonVersion: '3.11'
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+  dependsOn: Docs
+
+stages:
+  - stage: Deploy
+    displayName: 'Deploy Content Packs'
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/release-'))
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: DeployPacks
+        displayName: 'Deploy Content Packs'
+        steps:
+          - checkout: self
+
+          - template: ../jobs/python-setup.yml
+            parameters:
+              pythonVersion: ${{ parameters.pythonVersion }}
+
+          - task: PowerShell@2
+            displayName: 'Install dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                pip install -r requirements.txt
+
+          - task: PowerShell@2
+            displayName: 'Deploy packs'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/deploy.py
+
+          - task: PowerShell@2
+            displayName: 'Generate release notes'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/generate_release_notes.py
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish release notes'
+            inputs:
+              targetPath: 'documentation/release-notes.md'
+              artifactName: 'release-notes'
+              publishLocation: 'pipeline'

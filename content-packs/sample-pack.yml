@@ -1,0 +1,10 @@
+name: sample-pack
+version: 1.0.0
+owner: Detection Engineering
+description: Sample content pack for baseline detections.
+detections:
+  - sigma-rules/endpoint/endpoint_suspicious_powershell.yml
+  - sigma-rules/cloud/cloud_aws_suspicious_api_activity.yml
+  - sigma-rules/network/network_suspicious_dns_queries.yml
+  - sigma-rules/web/web_webshell_upload_detection.yml
+  - sigma-rules/macos/macos_suspicious_process_execution.yml

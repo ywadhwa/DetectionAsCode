@@ -1,0 +1,11 @@
+# Content Pack: {{ name }}
+
+**Version:** {{ version }}  
+**Owner:** {{ owner }}
+
+## Description
+{{ description }}
+
+## Detections
+{% for detection in detections %}- {{ detection }}
+{% endfor %}
