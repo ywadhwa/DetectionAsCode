@@ -11,12 +11,6 @@ trigger:
       - sigma-rules/**
       - azure-pipelines.yml
       - azure-pipelines/**
-      - content-packs/**
-      - schemas/**
-      - templates/**
-      - config/**
-      - scripts/**
-      - deployments/**
 
 pr:
   branches:
@@ -26,12 +20,8 @@ pr:
   paths:
     include:
       - sigma-rules/**
-      - content-packs/**
-      - schemas/**
-      - templates/**
-      - config/**
-      - scripts/**
-      - deployments/**
+      - azure-pipelines.yml
+      - azure-pipelines/**
 
 variables:
   pythonVersion: '3.11'
