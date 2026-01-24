@@ -26,6 +26,7 @@ stages:
                 python -m pip install --upgrade pip
                 pip install sigmatools
                 pip install ruamel.yaml
+                pip install pyyaml
 
           - task: PowerShell@2
             displayName: 'Lint Sigma rules'
@@ -57,3 +58,19 @@ stages:
               script: |
                 Write-Host "Validating file naming conventions..."
                 python scripts/validate_file_naming.py
+
+          - task: PowerShell@2
+            displayName: 'Validate rule metadata'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating rule metadata..."
+                python scripts/validate_rule_metadata.py
+
+          - task: PowerShell@2
+            displayName: 'Validate detection quality'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Validating detection quality..."
+                python scripts/validate_detection_quality.py

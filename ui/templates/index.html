@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Detection-as-Code Rule Builder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Detection-as-Code Rule Builder</h1>
+        <p>Create or update Sigma rules and open a GitHub pull request.</p>
+      </header>
+
+      <form method="post" action="{{ url_for('submit_rule') }}" class="rule-form">
+        <section>
+          <h2>Rule metadata</h2>
+          <label>
+            Title
+            <input type="text" name="title" required />
+          </label>
+          <label>
+            Rule ID (UUID)
+            <input type="text" name="rule_id" placeholder="Leave blank to auto-generate" />
+          </label>
+          <label>
+            Category
+            <select name="category" required>
+              {% for category in categories %}
+              <option value="{{ category }}">{{ category }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Filename slug
+            <input type="text" name="filename" placeholder="suspicious_powershell" />
+          </label>
+          <label>
+            Status
+            <select name="status" required>
+              <option value="experimental">experimental</option>
+              <option value="test">test</option>
+              <option value="stable">stable</option>
+              <option value="deprecated">deprecated</option>
+            </select>
+          </label>
+          <label>
+            Severity level
+            <select name="level" required>
+              <option value="informational">informational</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+              <option value="critical">critical</option>
+            </select>
+          </label>
+          <label>
+            Author
+            <input type="text" name="author" required />
+          </label>
+          <label>
+            Date (YYYY/MM/DD)
+            <input type="text" name="date" placeholder="2024/01/01" />
+          </label>
+          <label>
+            Description
+            <textarea name="description" rows="3" required></textarea>
+          </label>
+          <label>
+            References (one per line)
+            <textarea name="references" rows="3"></textarea>
+          </label>
+          <label>
+            Tags (one per line, include ATT&CK)
+            <textarea name="tags" rows="3"></textarea>
+          </label>
+          <label>
+            False positives (one per line)
+            <textarea name="falsepositives" rows="3"></textarea>
+          </label>
+        </section>
+
+        <section>
+          <h2>Log source</h2>
+          <label>
+            Product
+            <input type="text" name="logsource_product" />
+          </label>
+          <label>
+            Category
+            <input type="text" name="logsource_category" />
+          </label>
+          <label>
+            Service
+            <input type="text" name="logsource_service" />
+          </label>
+        </section>
+
+        <section>
+          <h2>Detection logic</h2>
+          <label>
+            Detection YAML
+            <textarea name="detection" rows="8" placeholder="selection:\n  field|contains: value\ncondition: selection"></textarea>
+          </label>
+        </section>
+
+        <section>
+          <h2>Conversion targets</h2>
+          <div class="checkbox-group">
+            <label><input type="checkbox" name="conversion_kql" checked /> KQL (Azure Data Explorer / Sentinel)</label>
+            <label><input type="checkbox" name="conversion_splunk" checked /> SPL (Splunk)</label>
+          </div>
+        </section>
+
+        <section>
+          <h2>Advanced</h2>
+          <label>
+            Existing rule path (optional)
+            <input type="text" name="rule_path" placeholder="sigma-rules/endpoint/endpoint_rule.yml" />
+          </label>
+        </section>
+
+        <button type="submit">Create pull request</button>
+      </form>
+    </main>
+  </body>
+</html>
