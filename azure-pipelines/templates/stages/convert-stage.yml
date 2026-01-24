@@ -28,6 +28,13 @@ stages:
                 - pyyaml
 
           - task: PowerShell@2
+            displayName: 'Install repo dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                pip install -r requirements.txt
+
+          - task: PowerShell@2
             displayName: 'Convert to Splunk queries'
             inputs:
               targetType: 'inline'

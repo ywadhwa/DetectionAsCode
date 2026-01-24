@@ -1,0 +1,27 @@
+# {{ title }}
+
+**Rule ID:** {{ id }}  
+**Status:** {{ status }}  
+**Version:** {{ version }}  
+**Owner:** {{ owner }}  
+**Content Pack:** {{ content_pack or 'n/a' }}
+
+## Description
+{{ description }}
+
+## Log Source
+- Product: {{ logsource.product | default('n/a') }}
+- Category: {{ logsource.category | default('n/a') }}
+- Service: {{ logsource.service | default('n/a') }}
+
+## Tags
+{% for tag in tags %}- {{ tag }}
+{% endfor %}
+
+## References
+{% for ref in references %}- {{ ref }}
+{% endfor %}
+
+## False Positives
+{% for fp in falsepositives %}- {{ fp }}
+{% endfor %}

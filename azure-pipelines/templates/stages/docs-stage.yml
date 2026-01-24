@@ -1,0 +1,46 @@
+# Stage template for generating documentation
+parameters:
+  pythonVersion: '3.11'
+  pool:
+    name: Default
+    demands:
+      - Agent.OS -equals Windows_NT
+  dependsOn: Report
+
+stages:
+  - stage: Docs
+    displayName: 'Generate Documentation'
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    pool: ${{ parameters.pool }}
+    jobs:
+      - job: GenerateDocs
+        displayName: 'Generate Documentation'
+        steps:
+          - checkout: self
+
+          - template: ../jobs/python-setup.yml
+            parameters:
+              pythonVersion: ${{ parameters.pythonVersion }}
+
+          - task: PowerShell@2
+            displayName: 'Install dependencies'
+            inputs:
+              targetType: 'inline'
+              script: |
+                pip install -r requirements.txt
+
+          - task: PowerShell@2
+            displayName: 'Generate docs and changelog'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python scripts/generate_docs.py
+                python scripts/generate_changelog.py
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish documentation'
+            inputs:
+              targetPath: 'documentation'
+              artifactName: 'documentation'
+              publishLocation: 'pipeline'

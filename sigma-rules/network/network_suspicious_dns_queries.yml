@@ -11,6 +11,11 @@ tags:
     - attack.command_and_control
     - attack.t1071.004
     - network.dns
+conversion_targets:
+    - kql
+    - splunk
+version: 1.0.0
+content_pack: sample-pack
 logsource:
     product: dns
     category: dns_query

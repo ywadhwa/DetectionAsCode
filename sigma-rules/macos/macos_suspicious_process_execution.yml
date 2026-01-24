@@ -11,6 +11,11 @@ tags:
     - attack.execution
     - attack.t1059
     - os.macos
+conversion_targets:
+    - kql
+    - splunk
+version: 1.0.0
+content_pack: sample-pack
 logsource:
     product: macos
     category: process_creation

@@ -11,6 +11,11 @@ tags:
     - attack.exfiltration
     - attack.t1530
     - cloud.aws
+conversion_targets:
+    - kql
+    - splunk
+version: 1.0.0
+content_pack: sample-pack
 logsource:
     product: aws
     service: cloudtrail

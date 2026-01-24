@@ -1,0 +1,8 @@
+required:
+  - sigma-rules
+  - scripts
+  - schemas
+  - templates
+  - documentation
+  - content-packs
+  - deployments

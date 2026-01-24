@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Detection Meta",
+  "type": "object",
+  "required": ["version", "owner", "status"],
+  "properties": {
+    "version": {"type": "string"},
+    "owner": {"type": "string"},
+    "status": {"type": "string"},
+    "content_pack": {"type": "string"},
+    "last_modified": {"type": "string"}
+  },
+  "additionalProperties": true
+}

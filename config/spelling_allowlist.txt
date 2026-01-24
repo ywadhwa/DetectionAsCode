@@ -1,0 +1,17 @@
+KQL
+SPL
+Splunk
+Sigma
+MITRE
+ATTACK
+ATT&CK
+PowerShell
+AWS
+GCP
+Azure
+ADX
+Kusto
+CloudTrail
+webshell
+webshells
+macOS

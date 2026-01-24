@@ -1,0 +1,6 @@
+/sigma-rules/** @org/detection-engineering
+/content-packs/** @org/detection-engineering
+/scripts/** @org/detection-platform
+/.github/** @org/security-platform
+/azure-pipelines/** @org/security-platform
+/docs/** @org/detection-engineering

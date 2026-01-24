@@ -12,6 +12,12 @@ trigger:
       - sigma-rules/**
       - azure-pipelines.yml
       - azure-pipelines/**
+      - content-packs/**
+      - schemas/**
+      - templates/**
+      - config/**
+      - scripts/**
+      - deployments/**
 
 pr:
   branches:
@@ -22,6 +28,12 @@ pr:
   paths:
     include:
       - sigma-rules/**
+      - content-packs/**
+      - schemas/**
+      - templates/**
+      - config/**
+      - scripts/**
+      - deployments/**
 
 variables:
   pythonVersion: '3.11'
@@ -57,6 +69,15 @@ stages:
           - Agent.OS -equals Windows_NT
       dependsOn: Convert
 
+  - template: azure-pipelines/templates/stages/docs-stage.yml
+    parameters:
+      pythonVersion: $(pythonVersion)
+      pool:
+        name: $(agentPoolName)
+        demands:
+          - Agent.OS -equals Windows_NT
+      dependsOn: Report
+
   # Test Splunk queries (only on staging and master branches)
   - template: azure-pipelines/templates/stages/test-splunk-stage.yml
     parameters:
@@ -72,6 +93,19 @@ stages:
       splunkPassword: 'ChangeMe123!'
       splunkIndex: 'test_data'
 
+  # Test KQL queries against Azure Data Explorer (only on staging and master branches)
+  - template: azure-pipelines/templates/stages/test-kql-stage.yml
+    parameters:
+      pythonVersion: $(pythonVersion)
+      pool:
+        name: $(agentPoolName)
+        demands:
+          - Agent.OS -equals Windows_NT
+      dependsOn: Convert
+      kustoCluster: $(KUSTO_CLUSTER)
+      kustoDatabase: $(KUSTO_DATABASE)
+      kustoToken: $(KUSTO_TOKEN)
+
   # Automatic branch promotion: dev → staging
   # Triggers after Report stage succeeds on dev branch
   - template: azure-pipelines/templates/stages/promote-branch-stage.yml
@@ -85,7 +119,7 @@ stages:
       dependsOn: Report
 
   # Automatic branch promotion: staging → master
-  # Triggers after TestSplunk stage succeeds on staging branch
+  # Triggers after TestSplunk and TestKql stages succeed on staging branch
   - template: azure-pipelines/templates/stages/promote-branch-stage.yml
     parameters:
       sourceBranch: staging
@@ -94,4 +128,15 @@ stages:
         name: $(agentPoolName)
         demands:
           - Agent.OS -equals Windows_NT
-      dependsOn: TestSplunk
+      dependsOn:
+        - TestSplunk
+        - TestKql
+
+  - template: azure-pipelines/templates/stages/deploy-stage.yml
+    parameters:
+      pythonVersion: $(pythonVersion)
+      pool:
+        name: $(agentPoolName)
+        demands:
+          - Agent.OS -equals Windows_NT
+      dependsOn: Docs

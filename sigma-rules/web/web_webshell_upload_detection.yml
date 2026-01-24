@@ -11,6 +11,11 @@ tags:
     - attack.persistence
     - attack.t1505.003
     - web.webshell
+conversion_targets:
+    - kql
+    - splunk
+version: 1.0.0
+content_pack: sample-pack
 logsource:
     product: webserver
     category: http_access
