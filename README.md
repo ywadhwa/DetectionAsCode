@@ -151,3 +151,4 @@ python scripts/generate_report.py
 - [MITRE ATT&CK](https://attack.mitre.org/)
 - [Detection-as-Code Architecture](docs/architecture.md)
 - [Git Workflow & Branching Strategy](docs/git-workflow.md)
+- [Branching Workflow Wiki Page](docs/wiki/Branching-Workflow.md)
