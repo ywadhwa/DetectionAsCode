@@ -176,6 +176,17 @@ jobs:
           echo "Validating KQL query syntax..."
           python scripts/validate_queries.py --type kql --directory output/kql || echo "KQL validation requires Azure SDK (optional)"
 
+      - name: Validate KQL with Kusto.Language
+        if: ${{ env.KUSTO_LANGUAGE_DLL != '' && env.KUSTO_SERVICES_DLL != '' }}
+        env:
+          KUSTO_LANGUAGE_DLL: ${{ secrets.KUSTO_LANGUAGE_DLL }}
+          KUSTO_SERVICES_DLL: ${{ secrets.KUSTO_SERVICES_DLL }}
+        run: |
+          python scripts/validate_kql_dotnet.py \
+            --kusto-dll "$KUSTO_LANGUAGE_DLL" \
+            --services-dll "$KUSTO_SERVICES_DLL" \
+            --file-dir output/kql
+
       - name: Upload query artifacts
         uses: actions/upload-artifact@v4
         if: always()

@@ -79,18 +79,6 @@ export KUSTO_TOKEN="<aad token>"
 python scripts/test_kql_queries.py --directory output/kql --expectations tests/expected_matches.yml
 ```
 
-### Web UI
-
-```bash
-pip install -r requirements.txt
-export GITHUB_TOKEN="<token>"
-export GITHUB_REPO="org/repo"
-export GITHUB_DEFAULT_BRANCH="dev"
-python ui/app.py
-```
-
-The UI is available at `http://localhost:5000` and will open a pull request on submission.
-
 ### Documentation & Changelog Automation
 
 ```bash
@@ -116,6 +104,15 @@ python scripts/deploy.py --platform sentinel --content-pack sample-pack --action
 ```
 
 Deployment mapping is configured in `deployments/mapping.json`. Required secrets for deployment are `SENTINEL_TOKEN`, `SENTINEL_WORKSPACE_ID`, `SPLUNK_HOST`, and `SPLUNK_TOKEN`.
+
+### KQL Validation via Kusto.Language (optional)
+
+```bash
+python scripts/validate_kql_dotnet.py \
+  --kusto-dll /path/to/Kusto.Language.dll \
+  --services-dll /path/to/Microsoft.Azure.Sentinel.KustoServices.dll \
+  --file-dir output/kql
+```
 
 ### Release Notes
 

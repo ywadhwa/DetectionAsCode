@@ -65,7 +65,7 @@
 - **GitHub Actions**: PR-based CI with artifact retention.
 - **Azure Pipelines**: Enterprise-scale validation, approvals, and release controls.
 - **Splunk & ADX**: Production-aligned validation environments for SPL and KQL.
-- **Flask UI**: Lightweight web UX to standardize submissions and enforce metadata.
+- **Documentation generators**: Jinja2-driven Markdown outputs for detections and content packs.
 
 ## Security and scalability considerations
 
