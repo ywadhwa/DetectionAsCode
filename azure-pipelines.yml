@@ -36,7 +36,7 @@ pr:
 variables:
   pythonVersion: '3.11'
   # Pool configuration for self-hosted Windows agent
-  # Change 'Default' to your actual agent pool name
+  # Using 'Default' agent pool
   agentPoolName: 'Default'
 
 # Include all stage templates

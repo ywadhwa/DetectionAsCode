@@ -157,6 +157,6 @@ After the pipeline is created and working:
 
 - **Pipeline YAML**: `/azure-pipelines.yml`
 - **Templates**: `/azure-pipelines/templates/`
-- **Branches**: `main`, `develop`, `staging`
+- **Branches**: `main`, `develop`
 - **Python Version**: 3.11
 - **Agent OS**: Windows (required)
