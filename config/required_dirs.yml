@@ -4,5 +4,3 @@ required:
   - schemas
   - templates
   - documentation
-  - content-packs
-  - deployments

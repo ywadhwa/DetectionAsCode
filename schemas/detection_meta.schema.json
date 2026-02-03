@@ -7,7 +7,6 @@
     "version": {"type": "string"},
     "owner": {"type": "string"},
     "status": {"type": "string"},
-    "content_pack": {"type": "string"},
     "last_modified": {"type": "string"}
   },
   "additionalProperties": true

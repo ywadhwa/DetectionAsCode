@@ -2,6 +2,7 @@
 """
 Validate detection quality requirements for Sigma rules.
 """
+import argparse
 import sys
 import yaml
 from pathlib import Path
@@ -40,13 +41,42 @@ def validate_quality(rule: Dict[str, object]) -> List[str]:
     return errors
 
 
+def collect_rule_files(sigma_rules_dir: Path, paths: List[str]) -> List[Path]:
+    if not paths:
+        return list(sigma_rules_dir.rglob("*.yml")) + list(sigma_rules_dir.rglob("*.yaml"))
+
+    repo_root = sigma_rules_dir.parent
+    files: List[Path] = []
+    for raw in paths:
+        candidate = Path(raw)
+        if not candidate.is_absolute():
+            candidate = (repo_root / candidate).resolve()
+        if candidate.is_dir():
+            files.extend(candidate.rglob("*.yml"))
+            files.extend(candidate.rglob("*.yaml"))
+        elif candidate.is_file():
+            if candidate.suffix.lower() in {".yml", ".yaml"}:
+                files.append(candidate)
+        else:
+            raise FileNotFoundError(raw)
+    return sorted(set(files))
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Validate detection quality")
+    parser.add_argument("files", nargs="*", help="Optional Sigma rule files or directories")
+    args = parser.parse_args()
+
     sigma_rules_dir = Path(__file__).parent.parent / "sigma-rules"
     if not sigma_rules_dir.exists():
         print(f"Error: {sigma_rules_dir} does not exist")
         sys.exit(1)
 
-    rule_files = list(sigma_rules_dir.rglob("*.yml")) + list(sigma_rules_dir.rglob("*.yaml"))
+    try:
+        rule_files = collect_rule_files(sigma_rules_dir, args.files)
+    except FileNotFoundError as exc:
+        print(f"Error: file or directory not found: {exc}")
+        sys.exit(1)
     if not rule_files:
         print("No Sigma rule files found")
         sys.exit(0)
@@ -59,7 +89,10 @@ def main() -> None:
             rule = yaml.safe_load(handle) or {}
 
         errors = validate_quality(rule)
-        relative_path = rule_file.relative_to(sigma_rules_dir.parent)
+        try:
+            relative_path = rule_file.relative_to(sigma_rules_dir.parent)
+        except ValueError:
+            relative_path = rule_file
 
         if errors:
             print(f"✗ {relative_path}")

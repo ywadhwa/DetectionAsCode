@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate semantic version bumps for detections and content packs."""
+"""Validate semantic version bumps for detections."""
 import os
 import subprocess
 import sys
@@ -44,8 +44,6 @@ def main() -> None:
         return
 
     all_valid = True
-    pack_versions_to_check = set()
-
     for detection_file in detection_changes:
         current_text = (repo_root / detection_file).read_text(encoding="utf-8")
         current_rule = load_yaml_text(current_text)
@@ -78,29 +76,6 @@ def main() -> None:
             print(f"✗ {meta_path}: version not bumped ({base_meta_version} -> {current_meta_version})")
         else:
             print(f"✓ {meta_path}: version bumped")
-
-        content_pack = current_rule.get("content_pack")
-        if content_pack:
-            pack_versions_to_check.add(content_pack)
-
-    for pack_name in pack_versions_to_check:
-        pack_path = Path("content-packs") / f"{pack_name}.yml"
-        if not (repo_root / pack_path).exists():
-            all_valid = False
-            print(f"✗ {pack_path}: content pack file missing")
-            continue
-        current_text = (repo_root / pack_path).read_text(encoding="utf-8")
-        base_text = git_show(pack_path, base_ref)
-        current_pack = load_yaml_text(current_text)
-        base_pack = load_yaml_text(base_text)
-        current_version = str(current_pack.get("version", "0.0.0"))
-        base_version = str(base_pack.get("version", "0.0.0"))
-
-        if base_text and not is_version_bumped(base_version, current_version):
-            all_valid = False
-            print(f"✗ {pack_path}: version not bumped ({base_version} -> {current_version})")
-        else:
-            print(f"✓ {pack_path}: version bumped")
 
     if not all_valid:
         sys.exit(1)

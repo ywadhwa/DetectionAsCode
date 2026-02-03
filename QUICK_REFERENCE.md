@@ -13,53 +13,62 @@
 ## Branch Workflow
 
 ```
-dev → staging → master
+main (long-lived)
+↑
+PRs from dev/*
 ```
-
-1. **Develop** on `dev` branch
-2. **Test** on `staging` branch (includes Splunk testing)
-3. **Deploy** to `master` branch (production)
 
 ## Common Commands
 
-### Local Validation
+### New Detections (dev/*)
 
 ```bash
-# Validate file naming
-python scripts/validate_file_naming.py
+git checkout main
+git pull origin main
 
-# Validate Sigma syntax
-python scripts/validate_sigma_syntax.py
+git checkout -b dev/new-suspicious-powershell
+./scripts/validate.sh
 
-# Convert to queries
-python scripts/convert_sigma.py --backend splunk
-python scripts/convert_sigma.py --backend kql
+git add .
+git commit -m "Add suspicious PowerShell detection"
+
+git push origin dev/new-suspicious-powershell
 ```
 
-### Splunk Testing
+### Small Fixes / Typos (direct to main)
 
 ```bash
-# Start Splunk
-cd docker && docker-compose up -d
+git checkout main
+git pull origin main
 
-# Load test data
-docker-compose --profile init up splunk-init
+git add .
+git commit -m "TYPO: fix README wording"
 
-# Test queries
-python scripts/test_splunk_queries.py
+git push origin main
+```
 
-# Stop Splunk
-docker-compose down
+### Infrastructure / Tooling (dev/pipeline-test)
+
+```bash
+git checkout main
+git pull origin main
+
+git checkout -b dev/pipeline-test
+./scripts/validate.sh
+
+git add .
+git commit -m "Update validation tooling"
+
+git push origin dev/pipeline-test
 ```
 
 ## Workflow Triggers
 
 | Action | Branch | What Runs |
 |--------|--------|-----------|
-| Push to `dev` | dev | Validation + Query Generation |
-| Push to `staging` | staging | All checks + Splunk Testing |
-| Push to `master` | master | All checks + Splunk Testing |
-| PR to any branch | - | Validation + Query Generation |
+| Push to `dev/*` | dev/* | Validation + Query Generation + Tests |
+| Push to `main` | main | Validation + Query Generation + Tests |
+| PR to `main` | - | Validation + Query Generation |
 
 ## Troubleshooting
 
@@ -85,14 +94,14 @@ docker-compose logs splunk  # Check logs
 DetectionAsCode/
 ├── sigma-rules/          # Your Sigma rules (organized by category)
 ├── scripts/              # Validation and conversion scripts
-├── docker/              # Splunk testing environment
-├── output/              # Generated queries (gitignored)
-└── .github/workflows/    # CI/CD pipelines
+├── docker/               # Splunk testing environment
+├── output/               # Generated queries (gitignored)
+└── azure-pipelines.yml   # Azure DevOps pipeline definition
 ```
 
 ## Next Steps
 
 1. ✅ File naming validation - **DONE**
 2. ✅ Docker Splunk testing - **DONE**
-3. ✅ Branch workflow (dev → staging → master) - **DONE**
+3. ✅ Branch workflow (dev/* → main) - **DONE**
 4. 🚀 Start adding your Sigma rules!
