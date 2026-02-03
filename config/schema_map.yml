@@ -7,11 +7,3 @@
   schema: schemas/detection_meta.schema.json
   paths:
     - sigma-rules/**/*.meta.yml
-- name: Content packs
-  schema: schemas/content_pack.schema.json
-  paths:
-    - content-packs/*.yml
-- name: Deployment mapping
-  schema: schemas/deployment_map.schema.json
-  paths:
-    - deployments/mapping.json

@@ -20,4 +20,3 @@ falsepositives:
   - Test
 level: high
 version: 1.0.1
-content_pack: sample-pack

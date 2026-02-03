@@ -1,14 +1,14 @@
-# Detection-as-Code Modernization Architecture
+# Detection-as-Code Architecture
 
 ## High-level architecture
 
-1. **GitHub as source of truth**
+1. **Git repository as source of truth**
    - Sigma rules live under `sigma-rules/` and are updated via pull requests.
-   - GitHub Actions runs the fast-path CI checks on every PR.
+   - `develop` is the integration branch; `main` is the stable release branch.
 
-2. **Azure DevOps for enterprise validation**
-   - Azure Pipelines mirrors the GitHub checks and adds gated integration tests.
-   - Pipeline stages support branch promotion from `dev` → `staging` → `master`.
+2. **Azure DevOps Pipelines for CI/CD**
+   - CI runs linting, schema validation, conversions, and tests in Azure DevOps Pipelines.
+   - Local validation remains the primary pre-push check.
 
 3. **Rule conversion and validation**
    - Sigma rules are converted to KQL and SPL using Sigma CLI.
@@ -16,62 +16,20 @@
 
 4. **Detection quality governance**
    - Metadata validation ensures rules carry required fields (author, tags, references).
-   - Quality gates enforce log source coverage, false positives, and ATT&CK mappings.
+   - Quality gates enforce log source coverage and ATT&CK mappings.
 
-## Repository structure
+## Core components
 
-```
-.
-├── sigma-rules/                # Sigma rules grouped by category
-├── scripts/                    # Validation, conversion, and testing utilities
-├── tests/                      # Expected match assertions for CI validation
-├── docker/                     # Local Splunk test harness
-├── .github/workflows/          # GitHub Actions pipelines
-├── azure-pipelines/            # Azure Pipelines templates
-├── azure-pipelines.yml         # Main Azure DevOps pipeline
-└── ui/                         # Web UI for rule authoring and PR creation
-```
-
-## CI/CD pipeline design (GitHub Actions)
-
-**Lint and validation (PR and push)**
-- `sigma lint` for schema validation.
-- `validate_sigma_syntax.py` for structural checks.
-- `validate_file_naming.py` for naming conventions.
-- `validate_rule_metadata.py` for required metadata.
-- `validate_detection_quality.py` for log source and false positive requirements.
-
-**Conversion & syntax validation**
-- `convert_sigma.py` generates KQL/SPL outputs based on `conversion_targets` metadata.
-- `validate_queries.py` checks basic syntax integrity for converted queries.
-
-**Integration testing (staging/master)**
-- `test_splunk_queries.py` runs SPL against Splunk test data and enforces expected matches.
-- `test_kql_queries.py` runs KQL against Azure Data Explorer and enforces expected matches.
-
-## CI/CD pipeline design (Azure Pipelines)
-
-**Stages**
-1. **Lint**: Sigma linting, metadata, and quality gates.
-2. **Convert**: Rule conversion and syntax checks.
-3. **Report**: Detection report generation.
-4. **TestSplunk**: Splunk integration tests using seeded test data.
-5. **TestKql**: KQL integration tests using a Kusto test cluster.
-6. **Promote**: Automated branch promotion once gates pass.
-
-## Tooling choices
-
-- **Sigma CLI**: Industry-standard rule conversion and linting.
-- **GitHub Actions**: PR-based CI with artifact retention.
-- **Azure Pipelines**: Enterprise-scale validation, approvals, and release controls.
-- **Splunk & ADX**: Production-aligned validation environments for SPL and KQL.
-- **Documentation generators**: Jinja2-driven Markdown outputs for detections and content packs.
+- **Sigma rules**: Raw detections in `sigma-rules/`.
+- **Validation scripts**: `scripts/validate*.py` and `scripts/validate.sh`.
+- **Conversion scripts**: `scripts/convert_sigma.py` for SPL and KQL output.
+- **Testing utilities**: Splunk + ADX testing helpers in `scripts/` and `docker/`.
+- **Documentation generator**: Jinja2-driven Markdown output for detections.
 
 ## Security and scalability considerations
 
-- **Least privilege**: GitHub tokens used by the UI should be scoped to repo-only permissions.
-- **Branch protection**: Require CI checks before merge into `staging` or `master`.
-- **Secret management**: Use GitHub/Azure secret stores for Splunk and Kusto credentials.
-- **Segregated environments**: `dev`, `staging`, and `master` branches map to separate detection deployments.
+- **Least privilege**: Service connections in Azure DevOps should be scoped to the repo.
+- **Branch protection**: Require checks before merge into `develop` or `main`.
+- **Secret management**: Use Azure DevOps variable groups for Splunk and Kusto credentials.
 - **Reproducibility**: Test datasets and expected matches are version-controlled under `tests/`.
-- **Scalability**: Conversions run in parallel jobs; artifact retention keeps query outputs auditable.
+- **Scalability**: Conversions run in parallel jobs; artifact retention keeps outputs auditable.

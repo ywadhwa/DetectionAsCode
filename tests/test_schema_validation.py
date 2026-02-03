@@ -23,9 +23,3 @@ def test_meta_schema():
     errors = list(validator.iter_errors(data))
     assert not errors
 
-
-def test_pack_schema():
-    data = yaml.safe_load(Path("tests/fixtures/sample_pack.yml").read_text(encoding="utf-8"))
-    validator = load_schema("content_pack.schema.json")
-    errors = list(validator.iter_errors(data))
-    assert not errors
