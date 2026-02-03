@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate references URLs in Sigma rules and content packs."""
+"""Validate references URLs in Sigma rules."""
 import sys
 from pathlib import Path
 from typing import List
@@ -19,16 +19,10 @@ def extract_links(rule: dict) -> List[str]:
 def main() -> None:
     repo_root = Path(__file__).parent.parent
     rule_files = list((repo_root / "sigma-rules").rglob("*.yml"))
-    pack_files = list((repo_root / "content-packs").glob("*.yml"))
-
     links: List[str] = []
     for rule_file in rule_files:
         data = yaml.safe_load(rule_file.read_text(encoding="utf-8")) or {}
         links.extend(extract_links(data))
-
-    for pack_file in pack_files:
-        data = yaml.safe_load(pack_file.read_text(encoding="utf-8")) or {}
-        links.extend(data.get("references", []) or [])
 
     unique_links = sorted(set(link for link in links if link.startswith("http")))
     if not unique_links:

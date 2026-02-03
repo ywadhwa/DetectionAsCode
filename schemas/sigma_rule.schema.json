@@ -18,7 +18,6 @@
     "falsepositives": {"type": "array", "items": {"type": "string"}},
     "level": {"type": "string"},
     "version": {"type": "string"},
-    "content_pack": {"type": "string"},
     "conversion_targets": {"type": "array", "items": {"type": "string"}}
   },
   "additionalProperties": true

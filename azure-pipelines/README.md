@@ -14,8 +14,9 @@ azure-pipelines/
 │       ├── lint-stage.yml
 │       ├── convert-stage.yml
 │       ├── report-stage.yml
+│       ├── docs-stage.yml
 │       ├── test-splunk-stage.yml
-│       └── promote-branch-stage.yml
+│       └── test-kql-stage.yml
 └── README.md
 ```
 
@@ -27,93 +28,33 @@ azure-pipelines/
 Reusable template for setting up Python environment.
 
 **Parameters:**
-- `pythonVersion` (default: '3.11'): Python version to use
+- `pythonVersion` (default: `3.11`)
 
 #### `install-dependencies.yml`
 Reusable template for installing Python dependencies.
 
 **Parameters:**
-- `dependencies`: List of Python packages to install
+- `dependencies` (list of pip packages)
 
 ### Stage Templates (`templates/stages/`)
 
 #### `lint-stage.yml`
-Lints and validates Sigma rules.
-
-**Parameters:**
-- `pythonVersion`: Python version
-- `pool`: Agent pool configuration
+Runs validation scripts and unit tests.
 
 #### `convert-stage.yml`
-Converts Sigma rules to Splunk and KQL queries.
-
-**Parameters:**
-- `pythonVersion`: Python version
-- `pool`: Agent pool configuration
-- `dependsOn`: Previous stage name
+Converts Sigma rules to SPL and KQL and validates syntax.
 
 #### `report-stage.yml`
-Generates detection report from converted queries.
+Generates a summary report and publishes artifacts.
 
-**Parameters:**
-- `pythonVersion`: Python version
-- `pool`: Agent pool configuration
-- `dependsOn`: Previous stage name
+#### `docs-stage.yml`
+Generates documentation and publishes artifacts.
 
 #### `test-splunk-stage.yml`
-Tests Splunk queries against Docker Splunk instance.
+Runs Splunk query tests for `dev/*` and `main`.
 
-**Parameters:**
-- `pythonVersion`: Python version
-- `pool`: Agent pool configuration
-- `dependsOn`: Previous stage name
-- `splunkHost`: Splunk host (default: 'localhost')
-- `splunkPort`: Splunk port (default: '8089')
-- `splunkUsername`: Splunk username (default: 'admin')
-- `splunkPassword`: Splunk password
-- `splunkIndex`: Splunk index name (default: 'test_data')
-
-#### `promote-branch-stage.yml`
-Automatically promotes code between branches after successful validation.
-
-**Parameters:**
-- `sourceBranch`: Source branch to promote from (e.g., 'develop')
-- `targetBranch`: Target branch to promote to (e.g., 'main')
-- `pool`: Agent pool configuration
-- `dependsOn`: Stage name that must succeed before promotion (e.g., 'Report' or 'TestSplunk')
-
-**Behavior:**
-- Only runs when pipeline is triggered from `sourceBranch`
-- Waits for `dependsOn` stage to succeed
-- Merges `sourceBranch` into `targetBranch`
-- Creates a promotion tag
-- Requires Git credentials with write permissions
-
-## Usage
-
-The main `azure-pipelines.yml` file orchestrates all stages by including these templates. To customize:
-
-1. **Change agent pool**: Update `poolName` parameter in `azure-pipelines.yml`
-2. **Modify stage behavior**: Edit the corresponding template file
-3. **Add new stages**: Create new template files and include them in the main pipeline
-
-## Branch Promotion Workflow
-
-The pipeline automatically promotes code between branches:
-
-1. **develop → main**: After `TestSplunk` and `TestKql` stages succeed on `develop` branch
-   - All validation checks pass
-   - Queries generated successfully
-   - Splunk and KQL queries tested successfully
-   - Automatically merges `develop` into `main`
-
-**Requirements for Branch Promotion:**
-- Git credentials with write permissions (configured via `persistCredentials: true`)
-- Branch protection rules should allow pipeline to push
-- No merge conflicts (pipeline will fail if conflicts exist)
-
-**Promotion Tags:**
-Each promotion creates a tag: `promote-<targetBranch>-<timestamp>`
+#### `test-kql-stage.yml`
+Runs KQL query tests for `dev/*` and `main`.
 
 ## Benefits
 
@@ -122,4 +63,3 @@ Each promotion creates a tag: `promote-<targetBranch>-<timestamp>`
 - **Testability**: Individual stages can be tested independently
 - **Readability**: Main pipeline file is clean and shows the flow
 - **Flexibility**: Easy to enable/disable stages or modify parameters
-- **Automation**: Automatic branch promotion reduces manual intervention

@@ -1,6 +1,6 @@
-# Detection as Code Pipeline
+# Detection as Code
 
-A Detection as Code (DaC) pipeline for managing Sigma rules with automated linting, validation, and conversion to Splunk and KQL queries.
+A Detection as Code (DaC) repository for managing Sigma rules with automated linting, validation, and conversion to Splunk and KQL queries.
 
 ## Features
 
@@ -8,13 +8,28 @@ A Detection as Code (DaC) pipeline for managing Sigma rules with automated linti
 - File naming validation (`<category>_<name>.yml`)
 - Automated linting and syntax checking
 - Metadata and detection quality validation (log source coverage, false positives, ATT&CK mappings)
-- JSON Schema validation for rules, metadata, content packs, and deployment maps
+- JSON Schema validation for rules and metadata
 - Reference/URL validation and spelling checks for metadata fields
 - Query generation for Splunk and KQL
 - Docker-based Splunk testing
 - Azure Data Explorer (KQL) validation hooks
-- CI/CD integration with GitHub Actions (dev → staging → master)
 - Web UI to submit Sigma rules and open pull requests
+
+## Repository Structure
+
+```
+DetectionAsCode/
+├── sigma-rules/          # Sigma rules by category
+├── scripts/              # Validation, conversion, and testing scripts
+├── schemas/              # JSON schemas for rules and metadata
+├── templates/            # Documentation templates
+├── documentation/        # Generated documentation output
+├── tests/                # Test fixtures and expected matches
+├── docker/               # Splunk testing environment
+├── azure-pipelines.yml   # Azure DevOps pipeline definition
+├── azure-pipelines/      # Pipeline templates
+└── ui/                   # Web UI for rule submissions
+```
 
 ## Quick Start
 
@@ -29,36 +44,18 @@ pip install -r requirements.txt
 Add rules to category directories following the naming convention: `<category>_<descriptive_name>.yml`
 
 ```bash
-# Example
 vim sigma-rules/endpoint/endpoint_suspicious_powershell.yml
 ```
 
-**Naming rules**: Category matches directory, lowercase with underscores, no consecutive underscores.
+### Local Validation (pre-PR)
 
-### Validate & Convert
+Run the full validation suite before opening a PR:
 
 ```bash
-# Validate naming and syntax
-python scripts/validate_file_naming.py
-python scripts/validate_sigma_syntax.py
-python scripts/validate_rule_metadata.py
-python scripts/validate_detection_quality.py
-python scripts/validate_schema.py
-python scripts/validate_links.py
-python scripts/validate_spelling.py
-python scripts/validate_repo_structure.py
-python scripts/validate_content_packs.py
-
-# Convert to queries
-python scripts/convert_sigma.py --backend splunk
-python scripts/convert_sigma.py --backend kql
-
-# Validate generated queries
-python scripts/validate_queries.py --type splunk --directory output/splunk
-python scripts/validate_queries.py --type kql --directory output/kql
+./scripts/validate.sh
 ```
 
-### Test with Splunk (Optional)
+### Optional: Splunk Testing
 
 ```bash
 cd docker
@@ -68,9 +65,7 @@ python scripts/test_splunk_queries.py --expectations tests/expected_matches.yml
 docker-compose down
 ```
 
-See [Docker README](docker/README.md) for details.
-
-### Test with Azure Data Explorer (Optional)
+### Optional: Azure Data Explorer (KQL) Testing
 
 ```bash
 export KUSTO_CLUSTER="https://<cluster>.kusto.windows.net"
@@ -79,57 +74,81 @@ export KUSTO_TOKEN="<aad token>"
 python scripts/test_kql_queries.py --directory output/kql --expectations tests/expected_matches.yml
 ```
 
-### Documentation & Changelog Automation
+## CI/CD
+
+CI/CD is handled in **Azure DevOps Pipelines**. The pipeline definition lives in `azure-pipelines.yml`, and reusable templates live under `azure-pipelines/templates/`. Local validation (`./scripts/validate.sh`) is the primary pre-PR check.
+
+## Git Workflow
+
+This personal repo uses **one long-lived branch** and **one short-lived branch prefix**:
+
+- **`main`**: the only long-lived branch
+- **`dev/*`**: short-lived working branches for detections and tooling
+
+### Scenario A — New Detections (dev/* → main via PR)
+
+**Rule**: Never push detection changes directly to `main`.
 
 ```bash
-python scripts/generate_docs.py
-python scripts/generate_changelog.py
+git checkout main
+git pull origin main
+
+git checkout -b dev/new-suspicious-powershell
+./scripts/validate.sh
+
+git add .
+git commit -m "Add suspicious PowerShell detection"
+
+git push origin dev/new-suspicious-powershell
 ```
 
-Generated outputs are written to `documentation/` and are deterministic for a given git history.
+Open a PR targeting `main` and include:
+- what the detection does
+- data sources
+- validation performed
 
-### Versioning Enforcement
+### Scenario B — Small Fixes / Typos (direct to main)
+
+Direct commits to `main` are allowed **only** for:
+- typos
+- comments
+- README/docs wording
+- non-functional formatting changes
+
+**Commit message prefixes are required:**
+- `FIX:` for small functional fixes
+- `TYPO:` for documentation or spelling fixes
 
 ```bash
-BASE_REF=origin/main python scripts/validate_versions.py
+git checkout main
+git pull origin main
+
+git add .
+git commit -m "TYPO: fix README wording"
+
+git push origin main
 ```
 
-Sigma rules, detection metadata (`*.meta.yml`), and content packs must bump their semantic versions when modified.
+### Scenario C — Infrastructure / Tooling (dev/pipeline-test → main via PR)
 
-### Deployment
+All changes to pipelines, scripts, validation tooling, or repo automation **must** use:
+
+- `dev/pipeline-test`
 
 ```bash
-python scripts/build_deploy_matrix.py
-python scripts/deploy.py --platform sentinel --content-pack sample-pack --action deploy --dry-run
+git checkout main
+git pull origin main
+
+git checkout -b dev/pipeline-test
+./scripts/validate.sh
+
+git add .
+git commit -m "Update validation tooling"
+
+git push origin dev/pipeline-test
 ```
 
-Deployment mapping is configured in `deployments/mapping.json`. Required secrets for deployment are `SENTINEL_TOKEN`, `SENTINEL_WORKSPACE_ID`, `SPLUNK_HOST`, and `SPLUNK_TOKEN`.
-
-### KQL Validation via Kusto.Language (optional)
-
-```bash
-python scripts/validate_kql_dotnet.py \
-  --kusto-dll /path/to/Kusto.Language.dll \
-  --services-dll /path/to/Microsoft.Azure.Sentinel.KustoServices.dll \
-  --file-dir output/kql
-```
-
-### Release Notes
-
-```bash
-python scripts/generate_release_notes.py
-```
-
-## GitHub Actions Workflow
-
-**Branch Strategy**: `dev` → `staging` → `master`
-- **dev**: Basic validation and query generation
-- **staging**: Includes Splunk query testing
-- **master**: Production-ready rules
-
-**Workflow Jobs**: Lint rules → Validate naming → Convert queries → Validate queries → Test Splunk (staging/master) → Generate report
-
-**View Results**: Actions tab → Latest run → Download `generated-queries` and `detection-report` artifacts
+Open a PR targeting `main`.
 
 ## Sigma Rule Format
 
@@ -150,7 +169,7 @@ logsource:
     category: process_creation
 detection:
     selection:
-        Image|endswith: '\powershell.exe'
+        Image|endswith: '\\powershell.exe'
         CommandLine|contains: '-enc'
     condition: selection
 level: high
@@ -164,28 +183,9 @@ level: high
 - **network**: Network traffic and protocol detections
 - **web**: Web application and server detections
 
-## Advanced Usage
-
-```bash
-# Convert single rule
-python scripts/convert_sigma.py --backend splunk --rule sigma-rules/endpoint/my_rule.yml
-
-# Generate report
-python scripts/generate_report.py
-```
-
-## Troubleshooting
-
-- **Sigma CLI not found**: `pip install sigmatools`
-- **Conversion fails**: Check Sigma syntax, required fields, and review `output/*/` error files
-- **Query validation**: Basic checks syntax only; use Splunk SDK or Azure Log Analytics for full validation
-- **KQL testing**: Ensure `KUSTO_CLUSTER`, `KUSTO_DATABASE`, and `KUSTO_TOKEN` are configured
-- **Schema validation errors**: Review `schemas/` definitions and required metadata fields
-
 ## Resources
 
 - [Sigma Specification](https://github.com/SigmaHQ/sigma)
 - [MITRE ATT&CK](https://attack.mitre.org/)
 - [Detection-as-Code Architecture](docs/architecture.md)
 - [Git Workflow & Branching Strategy](docs/git-workflow.md)
-- [Branching Workflow Contributor Guide](docs/branching-workflow.md)

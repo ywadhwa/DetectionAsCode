@@ -12,14 +12,14 @@ parameters:
   splunkPassword: 'ChangeMe123!'
   splunkIndex: 'test_data'
   enabledBranches:
-    - 'refs/heads/develop'
+    - 'refs/heads/dev/'
     - 'refs/heads/main'
 
 stages:
   - stage: TestSplunk
     displayName: 'Test Splunk Queries'
     dependsOn: ${{ parameters.dependsOn }}
-    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
+    condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/dev/'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
     pool: ${{ parameters.pool }}
     jobs:
       - job: TestSplunkQueries

@@ -48,8 +48,6 @@ def main() -> None:
         for status, path in commit["files"]:
             if path.startswith("sigma-rules/"):
                 buckets["detections"].append((status, path))
-            elif path.startswith("content-packs/"):
-                buckets["content-packs"].append((status, path))
             else:
                 buckets["other"].append((status, path))
         for bucket, items in buckets.items():
