@@ -8,7 +8,7 @@ This lightweight Flask UI lets detection engineers author Sigma rules, select co
 pip install -r requirements.txt
 export GITHUB_TOKEN="<token with repo scope>"
 export GITHUB_REPO="org/repo"
-export GITHUB_DEFAULT_BRANCH="dev"
+export GITHUB_DEFAULT_BRANCH="develop"
 python ui/app.py
 ```
 
