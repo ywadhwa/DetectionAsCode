@@ -13,43 +13,62 @@
 ## Branch Workflow
 
 ```
-develop → main
+main (long-lived)
+↑
+PRs from dev/*
 ```
-
-1. **Develop** on `develop` branch
-2. **Release** to `main` when ready
 
 ## Common Commands
 
-### Local Validation
+### New Detections (dev/*)
 
 ```bash
+git checkout main
+git pull origin main
+
+git checkout -b dev/new-suspicious-powershell
 ./scripts/validate.sh
+
+git add .
+git commit -m "Add suspicious PowerShell detection"
+
+git push origin dev/new-suspicious-powershell
 ```
 
-### Splunk Testing
+### Small Fixes / Typos (direct to main)
 
 ```bash
-# Start Splunk
-cd docker && docker-compose up -d
+git checkout main
+git pull origin main
 
-# Load test data
-docker-compose --profile init up splunk-init
+git add .
+git commit -m "TYPO: fix README wording"
 
-# Test queries
-python scripts/test_splunk_queries.py
+git push origin main
+```
 
-# Stop Splunk
-docker-compose down
+### Infrastructure / Tooling (dev/pipeline-test)
+
+```bash
+git checkout main
+git pull origin main
+
+git checkout -b dev/pipeline-test
+./scripts/validate.sh
+
+git add .
+git commit -m "Update validation tooling"
+
+git push origin dev/pipeline-test
 ```
 
 ## Workflow Triggers
 
 | Action | Branch | What Runs |
 |--------|--------|-----------|
-| Push to `develop` | develop | Validation + Query Generation + Tests |
+| Push to `dev/*` | dev/* | Validation + Query Generation + Tests |
 | Push to `main` | main | Validation + Query Generation + Tests |
-| PR to `develop` or `main` | - | Validation + Query Generation |
+| PR to `main` | - | Validation + Query Generation |
 
 ## Troubleshooting
 
@@ -84,5 +103,5 @@ DetectionAsCode/
 
 1. ✅ File naming validation - **DONE**
 2. ✅ Docker Splunk testing - **DONE**
-3. ✅ Branch workflow (develop → main) - **DONE**
+3. ✅ Branch workflow (dev/* → main) - **DONE**
 4. 🚀 Start adding your Sigma rules!

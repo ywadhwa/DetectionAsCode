@@ -21,7 +21,7 @@
 4. **Configure Pipeline**
    - Select **Existing Azure Pipelines YAML file**
    - **Path**: `/azure-pipelines.yml`
-   - **Branch**: Select `develop`
+   - **Branch**: Select `main`
    - Click **Continue**
 
 5. **Save and Run**
@@ -44,23 +44,21 @@ If you run KQL validation, add these variables:
 
 | Stage | Branches | Purpose |
 |-------|----------|---------|
-| **Lint** | develop, main | Validation, schema checks, unit tests |
-| **Convert** | develop, main | Convert Sigma rules to SPL/KQL |
-| **Report** | develop, main | Generate validation report |
-| **Docs** | develop, main | Generate documentation |
-| **TestSplunk** | develop, main | Test Splunk queries |
-| **TestKql** | develop, main | Test KQL queries |
+| **Lint** | dev/*, main | Validation, schema checks, unit tests |
+| **Convert** | dev/*, main | Convert Sigma rules to SPL/KQL |
+| **Report** | dev/*, main | Generate validation report |
+| **Docs** | dev/*, main | Generate documentation |
+| **TestSplunk** | dev/*, main | Test Splunk queries |
+| **TestKql** | dev/*, main | Test KQL queries |
 
 ---
 
 ## Branch Workflow
 
 ```
-develop (integration)
-  ↓
-[Validation + Conversion + Tests]
-  ↓
-main (stable)
+main (release)
+↑
+PRs from dev/*
 ```
 
 ---
@@ -69,7 +67,7 @@ main (stable)
 
 - **Pipeline File**: `/azure-pipelines.yml`
 - **Templates**: `/azure-pipelines/templates/`
-- **Branches**: `main`, `develop`
+- **Branches**: `main`, `dev/*`
 - **Python**: 3.11
 - **Agent OS**: Windows (required)
 

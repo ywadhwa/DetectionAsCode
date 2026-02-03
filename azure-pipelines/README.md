@@ -51,10 +51,10 @@ Generates a summary report and publishes artifacts.
 Generates documentation and publishes artifacts.
 
 #### `test-splunk-stage.yml`
-Runs Splunk query tests for `develop` and `main`.
+Runs Splunk query tests for `dev/*` and `main`.
 
 #### `test-kql-stage.yml`
-Runs KQL query tests for `develop` and `main`.
+Runs KQL query tests for `dev/*` and `main`.
 
 ## Benefits
 

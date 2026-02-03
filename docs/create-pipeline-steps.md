@@ -19,7 +19,7 @@ Since you've already connected your GitHub repository to Azure DevOps, follow th
 
 1. Select **Existing Azure Pipelines YAML file**
 2. In the path field, enter: `/azure-pipelines.yml`
-3. Select the branch: `develop` or `main`
+3. Select the branch: `main`
 4. Click **Continue**
 
 ## Step 4: Run and Verify
@@ -55,6 +55,6 @@ After the pipeline is created and working:
 
 - **Pipeline YAML**: `/azure-pipelines.yml`
 - **Templates**: `/azure-pipelines/templates/`
-- **Branches**: `main`, `develop`
+- **Branches**: `main`, `dev/*`
 - **Python Version**: 3.11
 - **Agent OS**: Windows (required)

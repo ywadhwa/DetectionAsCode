@@ -26,7 +26,7 @@ This guide walks you through connecting your repository to Azure DevOps and crea
 
 1. Go to **Pipelines** → **New pipeline**
 2. Select **Existing Azure Pipelines YAML file**
-3. Choose `/azure-pipelines.yml` and select the `develop` branch
+3. Choose `/azure-pipelines.yml` and select the `main` branch
 4. Click **Run**
 
 ## Step 3: Configure Variables
@@ -39,25 +39,25 @@ Add the following variables if you plan to run KQL validation:
 
 ## Step 4: Validate the Pipeline
 
-1. Make a change on `develop`
-2. Push the commit
+1. Create a test branch (for example: `dev/pipeline-test`)
+2. Push a commit
 3. Confirm the pipeline runs and reports success
 
 ## Pipeline Overview
 
 | Stage | Branches | Purpose |
 |-------|----------|---------|
-| Lint | develop, main | Validation, schema checks, unit tests |
-| Convert | develop, main | Convert Sigma rules to Splunk/KQL |
-| Report | develop, main | Generate validation report |
-| Docs | develop, main | Generate documentation |
-| TestSplunk | develop, main | Test Splunk queries |
-| TestKql | develop, main | Test KQL queries |
+| Lint | dev/*, main | Validation, schema checks, unit tests |
+| Convert | dev/*, main | Convert Sigma rules to Splunk/KQL |
+| Report | dev/*, main | Generate validation report |
+| Docs | dev/*, main | Generate documentation |
+| TestSplunk | dev/*, main | Test Splunk queries |
+| TestKql | dev/*, main | Test KQL queries |
 
 ## Branch Workflow
 
-- **develop**: Daily work and integration branch
-- **main**: Stable release branch
+- **main**: Long-lived release branch
+- **`dev/*`**: Short-lived working branches for detections and tooling
 
 ## Next Steps
 

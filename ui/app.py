@@ -77,7 +77,7 @@ def get_default_branch(repo: str, token: str) -> str:
         timeout=30,
     )
     response.raise_for_status()
-    return response.json().get("default_branch", "develop")
+    return response.json().get("default_branch", "main")
 
 
 def create_branch(repo: str, token: str, base_branch: str, new_branch: str) -> None:

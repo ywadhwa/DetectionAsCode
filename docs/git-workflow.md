@@ -1,77 +1,82 @@
 # Git Workflow & Branching Strategy
 
-This repository uses only **two long-lived branches**:
+This personal DaC repo uses a **single long-lived branch** and a **single short-lived branch prefix**:
 
-- **`develop`**: Daily work and integration. All changes land here first.
-- **`main`**: Stable releases. Only updated when you decide to release.
+- **`main`**: The only long-lived branch and release source of truth.
+- **`dev/*`**: Short-lived working branches for all detection work and tooling changes.
 
-## Normal work (develop)
+## Scenario A — New Detections (dev/* → main via PR)
 
-```bash
-git checkout develop
-git pull origin develop
-
-# Make changes, then commit
-git add .
-git commit -m "Describe your change"
-
-git push origin develop
-```
-
-## Release (develop → main)
+**Rule**: Never push detection changes directly to `main`.
 
 ```bash
 git checkout main
 git pull origin main
 
-git merge --no-ff develop
-git push origin main
+git checkout -b dev/new-suspicious-powershell
 
-# Tag the release
-git tag -a release-<version> -m "Release <version>"
-git push origin release-<version>
+# Make changes and validate
+./scripts/validate.sh
+
+git add .
+git commit -m "Add suspicious PowerShell detection"
+
+git push origin dev/new-suspicious-powershell
 ```
 
-### When to merge main → develop
+Open a Pull Request targeting `main` and include a clear summary:
+- What the detection does
+- Data sources used
+- Validation performed
 
-Only do this if `main` has release-specific changes (for example, a version bump or
-changelog edits) that should be reflected back in `develop`.
+## Scenario B — Small Fixes / Typos (direct to main)
+
+You may push directly to `main` **only** for:
+- typos
+- comments
+- README/docs wording
+- non-functional formatting changes
+
+**Commit message prefixes are required:**
+- `FIX:` for small functional fixes
+- `TYPO:` for documentation or spelling fixes
 
 ```bash
-git checkout develop
-git pull origin develop
-
-git merge --no-ff main
-git push origin develop
-```
-
-## Fixes (no hotfix branches)
-
-If `main` needs a rollback, use `git revert` on `main`, then fix forward on `develop`.
-
-```bash
-# Roll back on main
-
 git checkout main
 git pull origin main
 
-git revert <commit-sha>
+git add .
+git commit -m "TYPO: fix README wording"
+
 git push origin main
+```
 
-# Fix forward on develop
+## Scenario C — Infrastructure / Tooling (dev/pipeline-test → main via PR)
 
-git checkout develop
-git pull origin develop
-# apply the proper fix
+All changes to pipelines, scripts, validation tooling, or repo automation **must** use:
+
+- `dev/pipeline-test`
+
+```bash
+git checkout main
+git pull origin main
+
+git checkout -b dev/pipeline-test
+
+# Make changes and validate
+./scripts/validate.sh
 
 git add .
-git commit -m "Fix forward after revert"
-git push origin develop
+git commit -m "Update validation tooling"
+
+git push origin dev/pipeline-test
 ```
+
+Open a Pull Request targeting `main`.
 
 ## Local validation
 
-Run the full validation suite before pushing to `develop`:
+Run the full validation suite before opening a PR:
 
 ```bash
 ./scripts/validate.sh

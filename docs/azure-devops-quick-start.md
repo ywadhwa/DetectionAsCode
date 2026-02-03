@@ -36,8 +36,8 @@
 2. **Convert** - Convert Sigma rules to Splunk/KQL
 3. **Report** - Generate validation report
 4. **Docs** - Generate documentation
-5. **TestSplunk** - Tests Splunk queries (develop/main only)
-6. **TestKql** - Tests KQL queries (develop/main only)
+5. **TestSplunk** - Tests Splunk queries (dev/* and main only)
+6. **TestKql** - Tests KQL queries (dev/* and main only)
 
 ## Troubleshooting Quick Fixes
 

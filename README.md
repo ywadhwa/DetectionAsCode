@@ -47,9 +47,9 @@ Add rules to category directories following the naming convention: `<category>_<
 vim sigma-rules/endpoint/endpoint_suspicious_powershell.yml
 ```
 
-### Local Validation (pre-push)
+### Local Validation (pre-PR)
 
-Run the full validation suite before pushing to `develop`:
+Run the full validation suite before opening a PR:
 
 ```bash
 ./scripts/validate.sh
@@ -76,41 +76,79 @@ python scripts/test_kql_queries.py --directory output/kql --expectations tests/e
 
 ## CI/CD
 
-CI/CD is handled in **Azure DevOps Pipelines**. The pipeline definition lives in `azure-pipelines.yml`, and reusable templates live under `azure-pipelines/templates/`. Local validation (`./scripts/validate.sh`) is the primary pre-push check.
+CI/CD is handled in **Azure DevOps Pipelines**. The pipeline definition lives in `azure-pipelines.yml`, and reusable templates live under `azure-pipelines/templates/`. Local validation (`./scripts/validate.sh`) is the primary pre-PR check.
 
-## Git Workflow (main + develop only)
+## Git Workflow
 
-- **develop**: Daily work and integration branch
-- **main**: Stable release branch
+This personal repo uses **one long-lived branch** and **one short-lived branch prefix**:
 
-### Normal Work
+- **`main`**: the only long-lived branch
+- **`dev/*`**: short-lived working branches for detections and tooling
 
-```bash
-git checkout develop
-git pull origin develop
+### Scenario A — New Detections (dev/* → main via PR)
 
-git add .
-git commit -m "Describe your change"
-
-git push origin develop
-```
-
-### Release
+**Rule**: Never push detection changes directly to `main`.
 
 ```bash
 git checkout main
 git pull origin main
 
-git merge --no-ff develop
-git push origin main
+git checkout -b dev/new-suspicious-powershell
+./scripts/validate.sh
 
-git tag -a release-<version> -m "Release <version>"
-git push origin release-<version>
+git add .
+git commit -m "Add suspicious PowerShell detection"
+
+git push origin dev/new-suspicious-powershell
 ```
 
-### Fixes
+Open a PR targeting `main` and include:
+- what the detection does
+- data sources
+- validation performed
 
-Use `git revert` on `main` if a rollback is required, then fix forward on `develop`.
+### Scenario B — Small Fixes / Typos (direct to main)
+
+Direct commits to `main` are allowed **only** for:
+- typos
+- comments
+- README/docs wording
+- non-functional formatting changes
+
+**Commit message prefixes are required:**
+- `FIX:` for small functional fixes
+- `TYPO:` for documentation or spelling fixes
+
+```bash
+git checkout main
+git pull origin main
+
+git add .
+git commit -m "TYPO: fix README wording"
+
+git push origin main
+```
+
+### Scenario C — Infrastructure / Tooling (dev/pipeline-test → main via PR)
+
+All changes to pipelines, scripts, validation tooling, or repo automation **must** use:
+
+- `dev/pipeline-test`
+
+```bash
+git checkout main
+git pull origin main
+
+git checkout -b dev/pipeline-test
+./scripts/validate.sh
+
+git add .
+git commit -m "Update validation tooling"
+
+git push origin dev/pipeline-test
+```
+
+Open a PR targeting `main`.
 
 ## Sigma Rule Format
 

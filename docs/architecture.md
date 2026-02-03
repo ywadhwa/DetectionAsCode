@@ -4,7 +4,7 @@
 
 1. **Git repository as source of truth**
    - Sigma rules live under `sigma-rules/` and are updated via pull requests.
-   - `develop` is the integration branch; `main` is the stable release branch.
+   - `main` is the only long-lived branch; all work happens in short-lived `dev/*` branches.
 
 2. **Azure DevOps Pipelines for CI/CD**
    - CI runs linting, schema validation, conversions, and tests in Azure DevOps Pipelines.
@@ -29,7 +29,7 @@
 ## Security and scalability considerations
 
 - **Least privilege**: Service connections in Azure DevOps should be scoped to the repo.
-- **Branch protection**: Require checks before merge into `develop` or `main`.
+- **Branch protection**: Require checks before merge into `main`.
 - **Secret management**: Use Azure DevOps variable groups for Splunk and Kusto credentials.
 - **Reproducibility**: Test datasets and expected matches are version-controlled under `tests/`.
 - **Scalability**: Conversions run in parallel jobs; artifact retention keeps outputs auditable.
