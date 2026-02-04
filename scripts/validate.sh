@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Set up paths relative to the script location
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repo_root"
 
-echo "Running core validations..."
+echo "-------------------------------------------------------"
+echo "Step 1: Running Core Validations"
+echo "-------------------------------------------------------"
 python scripts/validate_file_naming.py
 python scripts/validate_sigma_syntax.py
 python scripts/validate_rule_metadata.py
@@ -14,6 +17,7 @@ python scripts/validate_links.py
 python scripts/validate_spelling.py
 python scripts/validate_repo_structure.py
 
+# Versioning check against the main branch
 if git rev-parse --verify origin/main >/dev/null 2>&1; then
   echo "Running versioning validation against ${BASE_REF:-origin/main}..."
   BASE_REF=${BASE_REF:-origin/main} python scripts/validate_versions.py
@@ -21,17 +25,77 @@ else
   echo "Skipping versioning validation (origin/main not available)."
 fi
 
-echo "Converting Sigma rules..."
-python scripts/convert_sigma.py --backend splunk
-python scripts/convert_sigma.py --backend kql
+echo ""
+echo "-------------------------------------------------------"
+echo "Step 2: Checking for Conversion Targets"
+echo "-------------------------------------------------------"
 
-python scripts/validate_queries.py --type splunk --directory output/splunk
-python scripts/validate_queries.py --type kql --directory output/kql
+rule_args=("$@")
+if [ "${#rule_args[@]}" -gt 0 ]; then
+  TARGET_PATHS=("${rule_args[@]}")
+else
+  TARGET_PATHS=("sigma-rules")
+fi
 
+# Global flags to track if any file in the batch needs a backend
+ANY_SPLUNK=0
+ANY_KQL=0
+
+for path in "${TARGET_PATHS[@]}"; do
+  [ -e "$path" ] || continue
+  if [ -d "$path" ]; then
+    mapfile -t FILES < <(find "$path" -type f \( -name "*.yml" -o -name "*.yaml" \))
+  else
+    FILES=("$path")
+  fi
+
+  for f in "${FILES[@]}"; do
+    [ -f "$f" ] || continue
+
+    # Check for the conversion_targets key (allowing for some indentation)
+    if grep -q "^[[:space:]]*conversion_targets:" "$f"; then
+      # Extract the block: starts at key, ends at first line with no leading spaces
+      block=$(awk '/^[[:space:]]*conversion_targets:/ {p=1; next} /^[A-Za-z0-9]/ {p=0} p' "$f")
+      
+      # Set global flags if specific backends are found in the block
+      if echo "$block" | grep -Eiq 'splunk'; then
+        ANY_SPLUNK=1
+      fi
+      if echo "$block" | grep -Eiq 'kql'; then
+        ANY_KQL=1
+      fi
+    fi
+  done
+done
+
+# Final execution based on accumulated global flags
+if [ "$ANY_SPLUNK" -eq 1 ] || [ "$ANY_KQL" -eq 1 ]; then
+  echo "Verified conversion targets found. Initializing backend processing..."
+
+  if [ "$ANY_SPLUNK" -eq 1 ]; then
+    echo "[PROCESSSING] >> Running Splunk Conversions..."
+    python scripts/convert_sigma.py --backend splunk
+    python scripts/validate_queries.py --type splunk --directory output/splunk
+  fi
+
+  if [ "$ANY_KQL" -eq 1 ]; then
+    echo "[PROCESSSING] >> Running KQL Conversions..."
+    python scripts/convert_sigma.py --backend kql
+    python scripts/validate_queries.py --type kql --directory output/kql
+  fi
+else
+  echo "Result: No conversion_targets found. Skipping Sigma conversion phase."
+fi
+
+echo ""
+echo "-------------------------------------------------------"
+echo "Step 3: Running Unit Tests"
+echo "-------------------------------------------------------"
 if python -m pytest --version >/dev/null 2>&1; then
   python -m pytest -q
 else
   echo "Skipping tests (pytest not installed)."
 fi
 
-echo "Validation complete."
+echo ""
+echo "✅ Validation complete."
