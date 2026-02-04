@@ -1,7 +1,7 @@
 # Reusable job template for installing Python dependencies
 parameters:
   dependencies:
-    - sigmatools
+    - sigma-cli
     - ruamel.yaml
     - pyyaml
 
