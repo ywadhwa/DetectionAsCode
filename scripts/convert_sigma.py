@@ -11,6 +11,10 @@ Key behaviors:
     - .<backend>.meta on success or skip
     - .<backend>.error on failure
 - Exits non-zero if any conversion fails.
+
+IMPORTANT:
+- sigma-cli expects input files as positional args: `sigma convert -t <target> <rule.yml>`
+  (NOT `-f <rule.yml>`). This script uses positional input.
 """
 from __future__ import annotations
 
@@ -25,7 +29,18 @@ import yaml
 
 Status = Literal["success", "skipped", "failed"]
 
-SUPPORTED_BACKENDS = {"splunk", "kql"}  # keep consistent with validate_rule_metadata.py
+# Repo-facing backend labels (keep consistent with validate_rule_metadata.py)
+SUPPORTED_BACKENDS = {"splunk", "kql"}
+
+
+def sigma_cli_target(backend: str) -> str:
+    """
+    Map our backend label to the Sigma CLI target name.
+
+    Sigma CLI uses 'kusto' for KQL (Azure Data Explorer / Sentinel).
+    We keep 'kql' as our repo-facing label to preserve output paths/extensions.
+    """
+    return "kusto" if backend == "kql" else backend
 
 
 def repo_root() -> Path:
@@ -87,11 +102,9 @@ def resolve_path(raw: str) -> Path:
             return cwd_p
         return (repo_root() / p).resolve()
 
-    # absolute path
     if p.exists():
         return p.resolve()
 
-    # absolute but missing — try re-root if it contains sigma-rules/
     rerooted = _reroot_if_contains_sigma_rules(p)
     if rerooted is not None:
         return rerooted
@@ -149,22 +162,26 @@ def convert_sigma_rule(rule_path: Path, backend: str, output_base: Path) -> Tupl
 
     targets = load_conversion_targets(rule_path)
     if targets is not None:
-        invalid = [t for t in targets if t not in SUPPORTED_BACKENDS]
-        if invalid:
-            write_meta(
-                err_file,
-                rule_path,
-                backend,
-                "Failed",
-                extra=f"Error: Unsupported conversion_targets value(s): {', '.join(invalid)}",
-            )
-            return "failed", output_query
-
         if backend not in targets:
             write_meta(meta_file, rule_path, backend, "Skipped (target not selected)")
             return "skipped", output_query
 
-    cmd = ["sigma", "convert", "-t", backend, "-f", str(rule_path)]
+    # --- UPDATED TO OFFICIAL CLI SYNTAX ---
+    # sigma-cli target name mapping (kql -> kusto)
+    cli_backend_name = sigma_cli_target(backend)
+    
+    cmd = [
+        "sigma", "convert",
+        "--target", cli_backend_name
+    ]
+    
+    # Apply the specific pipeline for Splunk CIM
+    if backend == "splunk":
+        cmd.extend(["--pipeline", "splunk_windows"])
+    
+    # Append the rule path as the final positional argument
+    cmd.append(str(rule_path))
+
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     if result.returncode == 0:
@@ -172,18 +189,11 @@ def convert_sigma_rule(rule_path: Path, backend: str, output_base: Path) -> Tupl
         write_meta(meta_file, rule_path, backend, "Success")
         return "success", output_query
 
-    err_content = "\n".join(
-        [
-            f"Source: {rule_path.as_posix()}",
-            f"Backend: {backend}",
-            "Status: Failed",
-            "Error:",
-            (result.stderr or "").rstrip(),
-        ]
-    ) + "\n"
+    # Error handling logic remains the same
+    details = "\n".join([s for s in [result.stdout.strip(), result.stderr.strip()] if s])
+    err_content = f"Source: {rule_path.as_posix()}\nBackend: {backend}\nStatus: Failed\nError:\n{details}\n"
     write_text(err_file, err_content)
     return "failed", output_query
-
 
 def collect_rule_files(rule_arg: Optional[str]) -> List[Path]:
     sr = sigma_rules_dir()
@@ -194,7 +204,6 @@ def collect_rule_files(rule_arg: Optional[str]) -> List[Path]:
 
     if rule_arg:
         p = resolve_path(rule_arg)
-
         if not p.exists():
             raise FileNotFoundError(f"Rule not found: {p} (repo root detected as {rr})")
 
@@ -226,7 +235,7 @@ def main() -> None:
     parser.add_argument(
         "--rule",
         type=str,
-        help="Convert a specific rule file OR a directory of rules (relative to repo root is OK)",
+        help="Convert a specific rule file OR a directory of rules (relative to repo root or CWD is OK)",
     )
     args = parser.parse_args()
 
