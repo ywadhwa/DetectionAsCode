@@ -31,11 +31,26 @@ def main() -> None:
 
     print(f"Validating {len(unique_links)} links...")
     all_valid = True
+    headers = {"User-Agent": "DetectionAsCode Link Validator"}
+    transient_statuses = {429, 503}
     for link in unique_links:
         try:
-            response = requests.head(link, allow_redirects=True, timeout=10)
+            response = requests.head(
+                link,
+                allow_redirects=True,
+                timeout=10,
+                headers=headers,
+            )
             if response.status_code == 405:
-                response = requests.get(link, allow_redirects=True, timeout=10)
+                response = requests.get(
+                    link,
+                    allow_redirects=True,
+                    timeout=10,
+                    headers=headers,
+                )
+            if response.status_code in transient_statuses:
+                print(f"⚠ {link} -> {response.status_code} (transient)")
+                continue
             if response.status_code >= 400:
                 all_valid = False
                 print(f"✗ {link} -> {response.status_code}")
