@@ -73,7 +73,7 @@ def validate_metadata(rule: Dict[str, object]) -> List[str]:
         errors.append("falsepositives must be a list")
 
     version = rule.get("version")
-    if version and not re.match(r"^\\d+\\.\\d+\\.\\d+$", str(version)):
+    if version and not re.match(r"^\d+\.\d+\.\d+$", str(version)):
         errors.append("version must follow semantic versioning (e.g., 1.2.3)")
 
     conversion_targets = rule.get("conversion_targets")
