@@ -8,6 +8,16 @@ from typing import Dict, List, Optional
 
 import yaml
 
+# Get the absolute path of the directory containing validate_versions.py (the 'scripts' folder)
+script_dir = Path(__file__).resolve().parent
+
+# The repo root is one level up from 'scripts'
+repo_root = script_dir.parent
+
+# Add the repo root to sys.path so 'import scripts' works
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 from scripts.lib.versioning import is_version_bumped
 
 
