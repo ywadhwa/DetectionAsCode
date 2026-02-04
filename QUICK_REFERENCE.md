@@ -104,4 +104,4 @@ DetectionAsCode/
 1. ✅ File naming validation - **DONE**
 2. ✅ Docker Splunk testing - **DONE**
 3. ✅ Branch workflow (dev/* → main) - **DONE**
-4. 🚀 Start adding your Sigma rules!
+4. 🚀 Start adding your Sigma rules! - **DONE**
