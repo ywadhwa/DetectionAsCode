@@ -26,7 +26,6 @@ def validate_metadata(rule: Dict[str, object]) -> List[str]:
         "date",
         "references",
         "tags",
-        "conversion_targets",
         "logsource",
         "detection",
         "level",
