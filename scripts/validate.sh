@@ -91,10 +91,26 @@ echo ""
 echo "-------------------------------------------------------"
 echo "Step 3: Running Unit Tests"
 echo "-------------------------------------------------------"
-if python -m pytest --version >/dev/null 2>&1; then
-  python -m pytest -q
+HAS_GENERATED_QUERIES=0
+
+# Check Splunk output
+if [ -d "output/splunk" ] && find "output/splunk" -type f -name "*.spl" -print -quit | grep -q .; then
+  HAS_GENERATED_QUERIES=1
+fi
+
+# Check KQL output
+if [ -d "output/kql" ] && find "output/kql" -type f -name "*.kql" -print -quit | grep -q .; then
+  HAS_GENERATED_QUERIES=1
+fi
+
+if [ "$HAS_GENERATED_QUERIES" -eq 1 ]; then
+  if python -m pytest --version >/dev/null 2>&1; then
+    python -m pytest -q
+  else
+    echo "Skipping tests (pytest not installed)."
+  fi
 else
-  echo "Skipping tests (pytest not installed)."
+  echo "Skipping tests (no generated Splunk/KQL queries to validate)."
 fi
 
 echo ""
