@@ -65,6 +65,17 @@ def main() -> None:
     print(f"Passed       : {result.get('metrics', {}).get('passed', 0)}")
     print(f"Failed       : {result.get('metrics', {}).get('failed', 0)}")
 
+    if args.mode in {"execute", "both"}:
+        per_file = result.get("artifacts", {}).get("results", [])
+        if per_file:
+            print("\nMatch summary (row counts):")
+            for entry in per_file:
+                query_file = entry.get("query_file", "<unknown>")
+                execution = entry.get("stages", {}).get("execution", {})
+                row_count = execution.get("row_count", 0)
+                status = execution.get("status", "unknown")
+                print(f"  - {query_file}: matches={row_count}, status={status}")
+
     if result.get("errors"):
         print("\nFailed queries:")
         for error in result["errors"]:
