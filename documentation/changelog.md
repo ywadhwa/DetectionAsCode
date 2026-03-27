@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-03-27 - added a final run-summary job for aggregation
+## 2026-03-27 - Applied timestamped bundle naming for both local and CI runs
 - Author: Yatin Wadhwa
-- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/80b5ac504c683d89c0c819fb18e20ba5d21f1ef4
+- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/41d0c61abd3a657660dd4239ad93632759608174
 - other:
   - added: .dockerignore
   - added: .github/CODEOWNERS
