@@ -26,6 +26,11 @@ def main() -> None:
         type=str,
         help="Optional path for structured JSON artifact",
     )
+    parser.add_argument(
+        "--bundle-output",
+        type=str,
+        help="Optional path for a single conversion bundle (JSON) containing query text and status per rule; suppresses .meta/.error sidecars",
+    )
     args = parser.parse_args()
 
     result = run_conversion(
@@ -33,6 +38,7 @@ def main() -> None:
         output=args.output,
         rule=args.rule,
         artifact_output=args.artifact_output,
+        bundle_output=args.bundle_output,
     )
 
     metrics = result.get("metrics", {})
@@ -52,6 +58,8 @@ def main() -> None:
         print(f"\nResult artifact: {args.artifact_output}")
     elif result.get("artifacts", {}).get("conversion_manifest_path"):
         print(f"\nConversion manifest: {result['artifacts']['conversion_manifest_path']}")
+    if args.bundle_output:
+        print(f"Conversion bundle: {args.bundle_output}")
 
     if result.get("status") == "failure":
         sys.exit(1)

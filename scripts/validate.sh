@@ -4,6 +4,7 @@ set -euo pipefail
 # Set up paths relative to the script location
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repo_root"
+bundle_ts=$(date +%Y%m%d_%H%M%S)
 
 echo "-------------------------------------------------------"
 echo "Step 1: Running Core Validations"
@@ -78,19 +79,19 @@ if [ "$ANY_SPLUNK" -eq 1 ] || [ "$ANY_KQL" -eq 1 ] || [ "$ANY_ELASTICSEARCH" -eq
 
   if [ "$ANY_SPLUNK" -eq 1 ]; then
     echo "[PROCESSSING] >> Running Splunk Conversions..."
-    python scripts/convert_sigma.py --backend splunk
+    python scripts/convert_sigma.py --backend splunk --bundle-output "output/splunk/splunk_bundle_${bundle_ts}.json"
     python scripts/validate_queries.py --type splunk --directory output/splunk
   fi
 
   if [ "$ANY_KQL" -eq 1 ]; then
     echo "[PROCESSSING] >> Running KQL Conversions..."
-    python scripts/convert_sigma.py --backend kql
+    python scripts/convert_sigma.py --backend kql --bundle-output "output/kql/kql_bundle_${bundle_ts}.json"
     python scripts/validate_queries.py --type kql --directory output/kql
   fi
 
   if [ "$ANY_ELASTICSEARCH" -eq 1 ]; then
     echo "[PROCESSSING] >> Running Elasticsearch Conversions..."
-    python scripts/convert_sigma.py --backend elasticsearch
+    python scripts/convert_sigma.py --backend elasticsearch --bundle-output "output/elasticsearch/elasticsearch_bundle_${bundle_ts}.json"
     python scripts/validate_queries.py --type elasticsearch --directory output/elasticsearch
   fi
 else

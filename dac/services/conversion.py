@@ -108,7 +108,13 @@ def write_meta(meta_path: Path, rule_path: Path, backend: str, status: str, extr
     write_text(meta_path, "\n".join(lines) + "\n")
 
 
-def convert_sigma_rule(rule_path: Path, backend: str, output_base: Path, timeout: int = 120) -> Tuple[Status, Path, str]:
+def convert_sigma_rule(
+    rule_path: Path,
+    backend: str,
+    output_base: Path,
+    timeout: int = 120,
+    emit_sidecars: bool = True,
+) -> Tuple[Status, Path, str, str]:
     """Convert one Sigma rule into one backend query."""
     relative_path = rel_to_sigma_dir(rule_path)
     output_query = output_base / relative_path.parent / f"{rule_path.stem}.{backend}"
@@ -117,8 +123,9 @@ def convert_sigma_rule(rule_path: Path, backend: str, output_base: Path, timeout
 
     targets = load_conversion_targets(rule_path)
     if targets is not None and backend not in targets:
-        write_meta(meta_file, rule_path, backend, "Skipped (target not selected)")
-        return "skipped", output_query, "target not selected"
+        if emit_sidecars:
+            write_meta(meta_file, rule_path, backend, "Skipped (target not selected)")
+        return "skipped", output_query, "target not selected", ""
 
     cmd = ["sigma", "convert", "--target", sigma_cli_target(backend)]
     if backend == "splunk":
@@ -131,18 +138,20 @@ def convert_sigma_rule(rule_path: Path, backend: str, output_base: Path, timeout
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if result.returncode == 0:
         write_text(output_query, result.stdout)
-        write_meta(meta_file, rule_path, backend, "Success")
-        return "success", output_query, ""
+        if emit_sidecars:
+            write_meta(meta_file, rule_path, backend, "Success")
+        return "success", output_query, "", result.stdout
 
     details = "\n".join([s for s in [result.stdout.strip(), result.stderr.strip()] if s])
-    err_content = (
-        f"Source: {rule_path.as_posix()}\n"
-        f"Backend: {backend}\n"
-        "Status: Failed\n"
-        f"Error:\n{details}\n"
-    )
-    write_text(err_file, err_content)
-    return "failed", output_query, details or "sigma convert failed"
+    if emit_sidecars:
+        err_content = (
+            f"Source: {rule_path.as_posix()}\n"
+            f"Backend: {backend}\n"
+            "Status: Failed\n"
+            f"Error:\n{details}\n"
+        )
+        write_text(err_file, err_content)
+    return "failed", output_query, details or "sigma convert failed", ""
 
 
 def collect_rule_files(rule_arg: Optional[str], root: Optional[Path] = None) -> List[Path]:
@@ -180,6 +189,7 @@ def run_conversion(
     output: str = "output",
     rule: Optional[str] = None,
     artifact_output: Optional[str] = None,
+    bundle_output: Optional[str] = None,
 ) -> Dict[str, object]:
     """Convert Sigma rules for one backend and emit structured artifacts/manifests."""
     start = time.monotonic()
@@ -222,21 +232,29 @@ def run_conversion(
         return result
 
     out_base = rr / output / backend
+    emit_sidecars = bundle_output is None
 
     success = 0
     skipped = 0
     failed = 0
     rules_manifest: List[Dict[str, object]] = []
     errors: List[str] = []
+    bundle_rules: List[Dict[str, object]] = []
 
     for rule_file in rule_files:
         rule_id = rule_identifier(rule_file)
         try:
-            status, query_path, error_message = convert_sigma_rule(rule_file, backend, out_base)
+            status, query_path, error_message, query_text = convert_sigma_rule(
+                rule_file,
+                backend,
+                out_base,
+                emit_sidecars=emit_sidecars,
+            )
         except Exception as exc:
             status = "failed"
             query_path = out_base / rule_file.name
             error_message = str(exc)
+            query_text = ""
 
         outputs: Dict[str, str] = {}
         generated: List[str] = []
@@ -268,6 +286,18 @@ def run_conversion(
         write_manifest(rule_manifest, per_rule_manifest_path)
         rule_manifest["manifest_path"] = str(per_rule_manifest_path)
         rules_manifest.append(rule_manifest)
+        bundle_rules.append(
+            {
+                "rule_id": rule_id,
+                "rule_path": str(rule_file),
+                "status": status,
+                "backend": backend,
+                "query_path": str(query_path),
+                "query": query_text if status == "success" else "",
+                "error": error_message if status == "failed" else "",
+                "skipped_reason": error_message if status == "skipped" else "",
+            }
+        )
 
     run_manifest = build_run_manifest(
         backend=backend,
@@ -307,4 +337,13 @@ def run_conversion(
 
     output_path = Path(artifact_output) if artifact_output else artifacts_dir(rr) / f"conversion-{backend}.json"
     write_manifest(result, output_path)
+    if bundle_output:
+        bundle_path = Path(bundle_output)
+        bundle_payload = {
+            "backend": backend,
+            "status": result.get("status"),
+            "metrics": result.get("metrics", {}),
+            "rules": bundle_rules,
+        }
+        write_manifest(bundle_payload, bundle_path)
     return result

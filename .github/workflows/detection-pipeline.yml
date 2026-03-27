@@ -101,7 +101,12 @@ jobs:
       - name: Convert to Elasticsearch queries
         run: |
           echo "Converting Sigma rules to Elasticsearch queries..."
-          python scripts/convert_sigma.py --backend elasticsearch --output output/elasticsearch --artifact-output output/artifacts/conversion-elasticsearch.json
+          bundle_ts="$(date -u +%Y%m%d_%H%M%S)"
+          python scripts/convert_sigma.py \
+            --backend elasticsearch \
+            --output output/elasticsearch \
+            --artifact-output output/artifacts/conversion-elasticsearch.json \
+            --bundle-output "output/elasticsearch/elasticsearch_bundle_${bundle_ts}_${GITHUB_RUN_ID}.json"
 
       - name: Upload query artifacts
         uses: actions/upload-artifact@v4
