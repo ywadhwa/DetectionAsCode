@@ -15,12 +15,8 @@ stages:
             parameters:
               pythonVersion: ${{ parameters.pythonVersion }}
 
-          - template: ../jobs/install-dependencies.yml
-            parameters:
-              packages: 'sigmatools ruamel.yaml pyyaml'
-
           - script: pip install -r requirements.txt
-            displayName: 'Install repo dependencies'
+            displayName: 'Install dependencies'
 
           - script: |
               echo "Converting Sigma rules to Splunk queries..."

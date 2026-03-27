@@ -26,8 +26,8 @@ pip3 install -r requirements.txt
 echo ""
 echo "Checking Sigma CLI..."
 if ! command -v sigma &> /dev/null; then
-    echo "⚠️  Sigma CLI not found in PATH. Installing sigmatools..."
-    pip3 install sigmatools
+    echo "⚠️  Sigma CLI not found in PATH. It should have been installed via requirements.txt"
+    echo "   Try: pip3 install sigma-cli"
 else
     echo "✓ Sigma CLI found"
 fi
