@@ -35,13 +35,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint Sigma rules
+      - name: Check Sigma rules
         run: |
-          echo "Linting all Sigma rules..."
-          find sigma-rules -name "*.yml" -o -name "*.yaml" | while read file; do
-            echo "Checking: $file"
-            sigma lint "$file" || exit 1
-          done
+          echo "Checking all Sigma rules..."
+          sigma check sigma-rules/
 
       - name: Validate Sigma rule syntax
         run: python scripts/validate_sigma_syntax.py

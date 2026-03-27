@@ -19,12 +19,9 @@ stages:
             displayName: 'Install dependencies'
 
           - script: |
-              echo "Linting all Sigma rules..."
-              find sigma-rules -name "*.yml" -o -name "*.yaml" | while read file; do
-                echo "Checking: $file"
-                sigma lint "$file" || exit 1
-              done
-            displayName: 'Lint Sigma rules'
+              echo "Checking all Sigma rules..."
+              sigma check sigma-rules/
+            displayName: 'Check Sigma rules'
 
           - script: |
               echo "Validating Sigma rule syntax..."
