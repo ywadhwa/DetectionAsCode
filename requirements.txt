@@ -9,3 +9,5 @@ pyspellchecker>=0.8.1
 packaging>=24.0
 pytest>=8.0.0
 sigma-cli
+elasticsearch>=8.0.0
+pySigma-backend-elasticsearch

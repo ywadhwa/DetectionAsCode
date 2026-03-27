@@ -3,10 +3,10 @@
 
 set -e
 
-SPLUNK_HOST="splunk"
-SPLUNK_PORT="8089"
-SPLUNK_USER="admin"
-SPLUNK_PASS="ChangeMe123!"
+SPLUNK_HOST="${SPLUNK_HOST:-splunk}"
+SPLUNK_PORT="${SPLUNK_PORT:-8089}"
+SPLUNK_USER="${SPLUNK_USER:-admin}"
+SPLUNK_PASS="${SPLUNK_PASSWORD:-changeme}"
 
 echo "Waiting for Splunk to be ready..."
 sleep 30
@@ -21,7 +21,7 @@ curl -k -u "${SPLUNK_USER}:${SPLUNK_PASS}" \
 # Load test data using HEC
 echo "Loading test data via HEC..."
 HEC_URL="http://${SPLUNK_HOST}:8088/services/collector"
-HEC_TOKEN="test-token-12345"
+HEC_TOKEN="${SPLUNK_HEC_TOKEN:-changeme}"
 
 # Sample Windows event data
 cat <<EOF | curl -k -H "Authorization: Splunk ${HEC_TOKEN}" \

@@ -79,10 +79,10 @@ def validate_metadata(rule: Dict[str, object]) -> List[str]:
         else:
             invalid = [
                 target for target in conversion_targets
-                if str(target).lower() not in {"kql", "splunk"}
+                if str(target).lower() not in {"kql", "splunk", "elasticsearch"}
             ]
             if invalid:
-                errors.append("conversion_targets entries must be 'kql' and/or 'splunk'")
+                errors.append("conversion_targets entries must be 'kql', 'splunk', and/or 'elasticsearch'")
 
     return errors
 

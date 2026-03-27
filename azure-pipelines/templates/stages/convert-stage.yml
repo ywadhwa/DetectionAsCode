@@ -40,7 +40,7 @@ stages:
               targetType: 'inline'
               script: |
                 Write-Host "Converting Sigma rules to Splunk queries..."
-                python scripts/convert_sigma.py --backend splunk --output output/splunk
+                python scripts/convert_sigma.py --backend splunk --output output/splunk --artifact-output output/artifacts/conversion-splunk.json
 
           - task: PowerShell@2
             displayName: 'Convert to KQL queries'
@@ -48,7 +48,7 @@ stages:
               targetType: 'inline'
               script: |
                 Write-Host "Converting Sigma rules to KQL queries..."
-                python scripts/convert_sigma.py --backend kql --output output/kql
+                python scripts/convert_sigma.py --backend kql --output output/kql --artifact-output output/artifacts/conversion-kql.json
 
           - task: PowerShell@2
             displayName: 'Validate Splunk queries'
@@ -56,7 +56,12 @@ stages:
               targetType: 'inline'
               script: |
                 Write-Host "Validating Splunk query syntax..."
-                python scripts/validate_queries.py --type splunk --directory output/splunk
+                $manifest = Get-ChildItem -Path output -Recurse -Filter "conversion_manifest.splunk.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($manifest) {
+                  python scripts/validate_queries.py --type splunk --directory output/splunk --manifest "$($manifest.FullName)" --artifact-output output/artifacts/validation-splunk.json
+                } else {
+                  python scripts/validate_queries.py --type splunk --directory output/splunk --artifact-output output/artifacts/validation-splunk.json
+                }
                 if ($LASTEXITCODE -ne 0) {
                   Write-Host "Splunk validation requires Splunk SDK (optional)"
                 }
@@ -67,7 +72,12 @@ stages:
               targetType: 'inline'
               script: |
                 Write-Host "Validating KQL query syntax..."
-                python scripts/validate_queries.py --type kql --directory output/kql
+                $manifest = Get-ChildItem -Path output -Recurse -Filter "conversion_manifest.kql.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($manifest) {
+                  python scripts/validate_queries.py --type kql --directory output/kql --manifest "$($manifest.FullName)" --artifact-output output/artifacts/validation-kql.json
+                } else {
+                  python scripts/validate_queries.py --type kql --directory output/kql --artifact-output output/artifacts/validation-kql.json
+                }
                 if ($LASTEXITCODE -ne 0) {
                   Write-Host "KQL validation requires Azure SDK (optional)"
                 }

@@ -40,6 +40,7 @@ fi
 # Global flags to track if any file in the batch needs a backend
 ANY_SPLUNK=0
 ANY_KQL=0
+ANY_ELASTICSEARCH=0
 
 for path in "${TARGET_PATHS[@]}"; do
   [ -e "$path" ] || continue
@@ -64,12 +65,15 @@ for path in "${TARGET_PATHS[@]}"; do
       if echo "$block" | grep -Eiq 'kql'; then
         ANY_KQL=1
       fi
+      if echo "$block" | grep -Eiq 'elasticsearch'; then
+        ANY_ELASTICSEARCH=1
+      fi
     fi
   done
 done
 
 # Final execution based on accumulated global flags
-if [ "$ANY_SPLUNK" -eq 1 ] || [ "$ANY_KQL" -eq 1 ]; then
+if [ "$ANY_SPLUNK" -eq 1 ] || [ "$ANY_KQL" -eq 1 ] || [ "$ANY_ELASTICSEARCH" -eq 1 ]; then
   echo "Verified conversion targets found. Initializing backend processing..."
 
   if [ "$ANY_SPLUNK" -eq 1 ]; then
@@ -82,6 +86,12 @@ if [ "$ANY_SPLUNK" -eq 1 ] || [ "$ANY_KQL" -eq 1 ]; then
     echo "[PROCESSSING] >> Running KQL Conversions..."
     python scripts/convert_sigma.py --backend kql
     python scripts/validate_queries.py --type kql --directory output/kql
+  fi
+
+  if [ "$ANY_ELASTICSEARCH" -eq 1 ]; then
+    echo "[PROCESSSING] >> Running Elasticsearch Conversions..."
+    python scripts/convert_sigma.py --backend elasticsearch
+    python scripts/validate_queries.py --type elasticsearch --directory output/elasticsearch
   fi
 else
   echo "Result: No conversion_targets found. Skipping Sigma conversion phase."
@@ -100,6 +110,11 @@ fi
 
 # Check KQL output
 if [ -d "output/kql" ] && find "output/kql" -type f -name "*.kql" -print -quit | grep -q .; then
+  HAS_GENERATED_QUERIES=1
+fi
+
+# Check Elasticsearch output
+if [ -d "output/elasticsearch" ] && find "output/elasticsearch" -type f -name "*.elasticsearch" -print -quit | grep -q .; then
   HAS_GENERATED_QUERIES=1
 fi
 

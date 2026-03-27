@@ -4,6 +4,17 @@ Docker-based Splunk instance for testing generated queries.
 
 ## Quick Start
 
+### Configure Environment
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env to set your credentials
+# SPLUNK_PASSWORD=your-secure-password
+# SPLUNK_HEC_TOKEN=your-hec-token
+```
+
 ### Start Splunk Instance
 
 ```bash
@@ -28,7 +39,7 @@ docker-compose --profile init up splunk-init
 
 - **Web UI**: http://localhost:8000
 - **Username**: admin
-- **Password**: ChangeMe123!
+- **Password**: (set via `SPLUNK_PASSWORD` environment variable)
 - **HEC Port**: 8088
 - **Management Port**: 8089
 

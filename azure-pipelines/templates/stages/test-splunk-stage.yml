@@ -9,7 +9,7 @@ parameters:
   splunkHost: 'localhost'
   splunkPort: '8089'
   splunkUsername: 'admin'
-  splunkPassword: 'ChangeMe123!'
+  splunkPassword: ''
   splunkIndex: 'test_data'
   enabledBranches:
     - 'refs/heads/dev/'

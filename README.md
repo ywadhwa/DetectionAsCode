@@ -10,10 +10,14 @@ A Detection as Code (DaC) repository for managing Sigma rules with automated lin
 - Metadata and detection quality validation (log source coverage, false positives, ATT&CK mappings)
 - JSON Schema validation for rules and metadata
 - Reference/URL validation and spelling checks for metadata fields
-- Query generation for Splunk and KQL
+- Query generation for Splunk, KQL, and Elasticsearch
 - Docker-based Splunk testing
 - Azure Data Explorer (KQL) validation hooks
+- Elasticsearch (Lucene) query testing against local or remote clusters
 - Web UI to submit Sigma rules and open pull requests
+- Service-layer modules for importable conversion/validation/testing workflows
+- Structured JSON artifacts for CI and future orchestration integration
+- Conversion manifests for backend-aware downstream validation and testing
 
 ## Repository Structure
 
@@ -21,6 +25,7 @@ A Detection as Code (DaC) repository for managing Sigma rules with automated lin
 DetectionAsCode/
 ├── sigma-rules/          # Sigma rules by category
 ├── scripts/              # Validation, conversion, and testing scripts
+├── dac/                  # Reusable services, backend adapters, result schemas
 ├── schemas/              # JSON schemas for rules and metadata
 ├── templates/            # Documentation templates
 ├── documentation/        # Generated documentation output
@@ -69,10 +74,31 @@ docker-compose down
 
 ```bash
 export KUSTO_CLUSTER="https://<cluster>.kusto.windows.net"
-export KUSTO_DATABASE="detections_test"
-export KUSTO_TOKEN="<aad token>"
-python scripts/test_kql_queries.py --directory output/kql --expectations tests/expected_matches.yml
+export KUSTO_DATABASE="dfir"
+# One auth mode:
+# export KUSTO_TOKEN="<aad token>"
+# or export KUSTO_TENANT_ID / KUSTO_CLIENT_ID / KUSTO_CLIENT_SECRET
+# or export KUSTO_USE_MANAGED_IDENTITY=true
+python scripts/test_kql_queries.py --mode both --directory output/kql --expectations tests/expected_matches.yml
 ```
+
+### Optional: Elasticsearch Testing
+
+```bash
+export ELASTIC_HOST="http://localhost:9200"
+export ELASTIC_INDEX="dfir-json-*"
+# Optional for Elastic Cloud:
+# export ELASTIC_API_KEY="<base64-encoded-api-key>"
+python scripts/test_elastic_queries.py --mode both --directory output/elasticsearch --expectations tests/expected_matches.yml
+```
+
+### Structured Artifacts
+
+Major scripts now emit machine-readable JSON artifacts under `output/artifacts/` by default (or `--artifact-output` override), while keeping existing console output and exit code behavior.
+
+### Conversion Manifest
+
+`scripts/convert_sigma.py` now writes a backend conversion manifest (`conversion_manifest.<backend>.json`) and per-rule manifests. Downstream scripts can use `--manifest` to validate/test only generated outputs.
 
 ## CI/CD
 
@@ -188,4 +214,7 @@ level: high
 - [Sigma Specification](https://github.com/SigmaHQ/sigma)
 - [MITRE ATT&CK](https://attack.mitre.org/)
 - [Detection-as-Code Architecture](docs/architecture.md)
+- [Architecture Summary](ARCHITECTURE.md)
 - [Git Workflow & Branching Strategy](docs/git-workflow.md)
+- [Agent Readiness Notes](docs/agent-readiness.md)
+- [ADX Integration Notes](docs/adx-integration.md)

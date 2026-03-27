@@ -35,7 +35,7 @@ fi
 # Create output directories
 echo ""
 echo "Creating output directories..."
-mkdir -p output/splunk output/kql
+mkdir -p output/splunk output/kql output/elasticsearch
 
 # Make scripts executable
 echo ""

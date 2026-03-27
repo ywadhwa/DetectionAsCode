@@ -20,3 +20,8 @@ kql:
     min: 1
   output/kql/macos/macos_suspicious_process_execution.kql:
     min: 1
+elasticsearch:
+  output/elasticsearch/endpoint/endpoint_suspicious_powershell.elasticsearch:
+    min: 1
+  output/elasticsearch/network/network_suspicious_dns_queries.elasticsearch:
+    min: 1

@@ -78,7 +78,7 @@ stages:
       splunkHost: 'localhost'
       splunkPort: '8089'
       splunkUsername: 'admin'
-      splunkPassword: 'ChangeMe123!'
+      splunkPassword: $(SPLUNK_PASSWORD)
       splunkIndex: 'test_data'
 
   # Test KQL queries against Azure Data Explorer (only on dev/* and main branches)
@@ -93,3 +93,9 @@ stages:
       kustoCluster: $(KUSTO_CLUSTER)
       kustoDatabase: $(KUSTO_DATABASE)
       kustoToken: $(KUSTO_TOKEN)
+      kustoTenantId: $(KUSTO_TENANT_ID)
+      kustoClientId: $(KUSTO_CLIENT_ID)
+      kustoClientSecret: $(KUSTO_CLIENT_SECRET)
+      kustoUseManagedIdentity: $(KUSTO_USE_MANAGED_IDENTITY)
+      kustoQueryTimeout: $(KUSTO_QUERY_TIMEOUT)
+      kustoRowLimit: $(KUSTO_ROW_LIMIT)

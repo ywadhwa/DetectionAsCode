@@ -9,6 +9,12 @@ parameters:
   kustoCluster: ''
   kustoDatabase: ''
   kustoToken: ''
+  kustoTenantId: ''
+  kustoClientId: ''
+  kustoClientSecret: ''
+  kustoUseManagedIdentity: 'false'
+  kustoQueryTimeout: '30'
+  kustoRowLimit: '1000'
   enabledBranches:
     - 'refs/heads/dev/'
     - 'refs/heads/main'
@@ -48,16 +54,37 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                if (-not '${{ parameters.kustoCluster }}' -or -not '${{ parameters.kustoDatabase }}' -or -not '${{ parameters.kustoToken }}') {
-                  Write-Error "Kusto connection parameters are required"
+                if (-not '${{ parameters.kustoCluster }}' -or -not '${{ parameters.kustoDatabase }}') {
+                  Write-Error "Kusto cluster and database are required"
                   exit 1
+                }
+                $manifest = Get-ChildItem -Path output -Recurse -Filter "conversion_manifest.kql.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+                $manifestArg = ""
+                if ($manifest) {
+                  Write-Host "Using manifest: $($manifest.FullName)"
+                  $manifestArg = "--manifest `"$($manifest.FullName)`""
+                } else {
+                  Write-Host "No KQL conversion manifest found; falling back to directory scan."
+                }
+                $managedIdentityArg = ""
+                if ("${{ parameters.kustoUseManagedIdentity }}" -eq "true") {
+                  $managedIdentityArg = "--use-managed-identity"
                 }
                 python scripts/test_kql_queries.py `
                   --cluster "${{ parameters.kustoCluster }}" `
                   --database "${{ parameters.kustoDatabase }}" `
                   --token "${{ parameters.kustoToken }}" `
+                  --tenant-id "${{ parameters.kustoTenantId }}" `
+                  --client-id "${{ parameters.kustoClientId }}" `
+                  --client-secret "${{ parameters.kustoClientSecret }}" `
+                  --timeout "${{ parameters.kustoQueryTimeout }}" `
+                  --row-limit "${{ parameters.kustoRowLimit }}" `
+                  --mode both `
                   --directory output/kql `
-                  --expectations tests/expected_matches.yml
+                  --expectations tests/expected_matches.yml `
+                  --artifact-output output/artifacts/kql-testing.json `
+                  $manifestArg `
+                  $managedIdentityArg
 
           - task: PowerShell@2
             displayName: 'Validate KQL with Kusto.Language'
@@ -72,3 +99,11 @@ stages:
                 } else {
                   Write-Host "Skipping Kusto.Language validation (DLL paths not set)"
                 }
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish KQL test artifacts'
+            condition: always()
+            inputs:
+              targetPath: 'output/artifacts'
+              artifactName: 'kql-test-artifacts'
+              publishLocation: 'pipeline'

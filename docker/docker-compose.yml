@@ -6,8 +6,8 @@ services:
     container_name: dac-splunk-test
     environment:
       - SPLUNK_START_ARGS=--accept-license
-      - SPLUNK_PASSWORD=ChangeMe123!
-      - SPLUNK_HEC_TOKEN=test-token-12345
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD:-changeme}
+      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN:-changeme}
     ports:
       - "8000:8000"  # Web UI
       - "8088:8088"  # HEC (HTTP Event Collector)

@@ -29,3 +29,19 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Secrets
+secrets/
+*.secret
+*.credentials
+
+# Backup files
+*.bak
+*.orig
