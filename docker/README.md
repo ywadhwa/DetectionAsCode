@@ -17,6 +17,8 @@ docker-compose ps
 docker-compose --profile init up elasticsearch-init
 ```
 
+**Local NDJSON fixtures:** add redacted `*.ndjson` files under `tests/fixtures/` (gitignored). They are mounted into the init container and bulk-ingested when present; see `tests/fixtures/README.md`. If there are no `*.ndjson` files there, small embedded samples are loaded instead (same as CI).
+
 ### Access Elasticsearch
 
 - **API**: http://localhost:9200

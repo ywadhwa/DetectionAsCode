@@ -161,6 +161,7 @@ jobs:
       - name: Load test data into Elasticsearch
         run: |
           chmod +x docker/init-scripts/load-elastic-test-data.sh
+          export FIXTURES_DIR="${GITHUB_WORKSPACE}/tests/fixtures"
           ELASTIC_HOST=localhost ELASTIC_PORT=9200 docker/init-scripts/load-elastic-test-data.sh
 
       - name: Validate Elasticsearch queries (compile)

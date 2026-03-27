@@ -30,6 +30,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Local-only NDJSON samples for Elasticsearch/Splunk testing (never commit real telemetry)
+tests/fixtures/*.ndjson
+
 # Environment files
 .env
 .env.local

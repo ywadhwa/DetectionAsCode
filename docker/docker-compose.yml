@@ -25,15 +25,20 @@ services:
       - dac-network
 
   elasticsearch-init:
-    image: curlimages/curl:latest
+    image: alpine:3.19
     container_name: dac-elasticsearch-init
     depends_on:
       elasticsearch:
         condition: service_healthy
+    environment:
+      - ELASTIC_HOST=elasticsearch
+      - ELASTIC_PORT=9200
+      - FIXTURES_DIR=/fixtures
     volumes:
       - ./init-scripts:/scripts:ro
+      - ../tests/fixtures:/fixtures:ro
     entrypoint: /bin/sh
-    command: /scripts/load-elastic-test-data.sh
+    command: -c "apk add --no-cache --quiet curl python3 && exec sh /scripts/load-elastic-test-data.sh"
     networks:
       - dac-network
     profiles:
