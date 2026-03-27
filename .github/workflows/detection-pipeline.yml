@@ -267,3 +267,103 @@ jobs:
             git commit -m "docs: Auto-update documentation [skip ci]"
             git push
           fi
+
+  run-summary:
+    name: Workflow Run Summary
+    runs-on: ubuntu-latest
+    needs: [lint, convert, test-elasticsearch, report, docs]
+    if: always()
+    permissions:
+      contents: read
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: run-artifacts
+          pattern: '*'
+          merge-multiple: true
+          if-no-files-found: ignore
+
+      - name: Generate run summary
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          CONVERT_RESULT: ${{ needs.convert.result }}
+          TEST_RESULT: ${{ needs.test-elasticsearch.result }}
+          REPORT_RESULT: ${{ needs.report.result }}
+          DOCS_RESULT: ${{ needs.docs.result }}
+          RUN_ARTIFACTS_DIR: run-artifacts
+        run: |
+          python - <<'PY'
+          import glob
+          import json
+          import os
+
+          artifacts_dir = os.environ.get("RUN_ARTIFACTS_DIR", "run-artifacts")
+          summary_path = os.environ["GITHUB_STEP_SUMMARY"]
+
+          def first_by_name(name: str):
+              matches = glob.glob(f"{artifacts_dir}/**/{name}", recursive=True)
+              if not matches:
+                  return None
+              with open(matches[0], encoding="utf-8") as f:
+                  return json.load(f)
+
+          conversion = first_by_name("conversion-elasticsearch.json") or {}
+          validation = first_by_name("validation-elasticsearch.json") or {}
+          execution = first_by_name("test-elasticsearch.json") or {}
+
+          lines = []
+          lines.append("# Detection as Code CI Run Summary")
+          lines.append("")
+          lines.append("## Job status")
+          lines.append(f"- `lint`: {os.environ.get('LINT_RESULT', 'unknown')}")
+          lines.append(f"- `convert`: {os.environ.get('CONVERT_RESULT', 'unknown')}")
+          lines.append(f"- `test-elasticsearch`: {os.environ.get('TEST_RESULT', 'unknown')}")
+          lines.append(f"- `report`: {os.environ.get('REPORT_RESULT', 'unknown')}")
+          lines.append(f"- `docs`: {os.environ.get('DOCS_RESULT', 'unknown')}")
+          lines.append("")
+
+          if conversion:
+              cm = conversion.get("metrics", {})
+              lines.append("## Conversion (Elasticsearch)")
+              lines.append(f"- status: `{conversion.get('status', 'unknown')}`")
+              lines.append(f"- processed_rules: `{cm.get('processed_rules', 0)}`")
+              lines.append(f"- generated: `{cm.get('generated_count', 0)}`")
+              lines.append(f"- skipped: `{cm.get('skipped_count', 0)}`")
+              lines.append(f"- failed: `{cm.get('failed_count', 0)}`")
+              lines.append("")
+
+          if validation:
+              vm = validation.get("metrics", {})
+              lines.append("## Elasticsearch compile check")
+              lines.append(f"- status: `{validation.get('status', 'unknown')}`")
+              lines.append(f"- files_checked: `{vm.get('files_checked', 0)}`")
+              lines.append(f"- passed: `{vm.get('passed', 0)}`")
+              lines.append(f"- failed: `{vm.get('failed', 0)}`")
+              lines.append("")
+
+          if execution:
+              em = execution.get("metrics", {})
+              lines.append("## Elasticsearch execution check")
+              lines.append(f"- status: `{execution.get('status', 'unknown')}`")
+              lines.append(f"- files_checked: `{em.get('files_checked', 0)}`")
+              lines.append(f"- passed: `{em.get('passed', 0)}`")
+              lines.append(f"- failed: `{em.get('failed', 0)}`")
+              lines.append("")
+              rows = execution.get("artifacts", {}).get("results", [])
+              if rows:
+                  lines.append("### Match counts")
+                  for item in rows:
+                      qf = item.get("query_file", "<unknown>")
+                      stage = item.get("stages", {}).get("execution", {})
+                      matches = stage.get("row_count", 0)
+                      status = stage.get("status", "unknown")
+                      lines.append(f"- `{qf}`: matches=`{matches}`, status=`{status}`")
+                  lines.append("")
+
+          if not conversion and not validation and not execution:
+              lines.append("No JSON artifacts were found for conversion/testing in this run.")
+
+          with open(summary_path, "a", encoding="utf-8") as out:
+              out.write("\n".join(lines) + "\n")
+          PY
