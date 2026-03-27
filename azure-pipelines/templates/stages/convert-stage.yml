@@ -22,10 +22,7 @@ stages:
 
           - template: ../jobs/install-dependencies.yml
             parameters:
-              dependencies:
-                - sigmatools
-                - ruamel.yaml
-                - pyyaml
+              packages: 'sigmatools ruamel.yaml pyyaml'
 
           - task: PowerShell@2
             displayName: 'Install repo dependencies'

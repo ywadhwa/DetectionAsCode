@@ -1,17 +1,12 @@
-# Reusable job template for installing Python dependencies
+# Reusable step template for installing Python dependencies
 parameters:
-  dependencies:
-    - sigma-cli
-    - ruamel.yaml
-    - pyyaml
+  packages: 'sigma-cli ruamel.yaml pyyaml'
 
 steps:
   - task: PowerShell@2
-    displayName: 'Install dependencies'
+    displayName: 'Install Python dependencies'
     inputs:
       targetType: 'inline'
       script: |
         python -m pip install --upgrade pip
-        ${{ each dep in parameters.dependencies }}
-        pip install ${{ dep }}
-        ${{ endfor }}
+        pip install ${{ parameters.packages }}
