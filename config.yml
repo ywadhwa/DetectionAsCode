@@ -6,6 +6,7 @@ sigma:
   backends:
     - splunk
     - kql
+    - elasticsearch
   
   # Rule categories
   categories:
@@ -35,6 +36,10 @@ conversion:
   
   kql:
     format: kql
+    include_metadata: true
+  
+  elasticsearch:
+    format: lucene
     include_metadata: true
 
 # Report settings

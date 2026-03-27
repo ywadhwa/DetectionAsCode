@@ -39,7 +39,7 @@ Conversion also emits run and per-rule manifests (JSON) in output backend folder
 - Existing Azure DevOps stage structure is preserved.
 - New flags are additive (`--manifest`, `--artifact-output`, KQL auth/mode options).
 
-## Current TODOs
+## Open Decisions
 
-- TODO: lock final fail/warn policy for ADX compile vs execute outcomes by branch/environment.
-- TODO: define a stable cross-stage artifact contract version once pipeline consumers are finalized.
+- Confirm final fail/warn policy for ADX compile vs execute outcomes by branch/environment.
+- Define a stable cross-stage artifact contract version once pipeline consumers are finalized.

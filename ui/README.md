@@ -12,7 +12,7 @@ export GITHUB_DEFAULT_BRANCH="main"
 python ui/app.py
 ```
 
-Open `http://localhost:5000` and submit a rule. The UI creates a branch, commits the Sigma rule, and opens a pull request to trigger the CI/CD pipeline.
+Open `http://localhost:5001` (or your configured `PORT`) and submit a rule. The UI creates a branch, commits the Sigma rule, and opens a pull request to trigger the CI/CD pipeline.
 
 ## Required environment variables
 

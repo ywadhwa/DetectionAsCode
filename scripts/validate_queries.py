@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Splunk and KQL query syntax (CLI wrapper around service layer)."""
+"""Validate Splunk, KQL, and Elasticsearch query syntax (CLI wrapper around service layer)."""
 from __future__ import annotations
 
 import argparse
@@ -14,7 +14,12 @@ from dac.services.query_validation import validate_queries
 def main() -> None:
     """Parse CLI args and run query validation."""
     parser = argparse.ArgumentParser(description="Validate query syntax")
-    parser.add_argument("--type", choices=["splunk", "kql"], required=True, help="Type of queries to validate")
+    parser.add_argument(
+        "--type",
+        choices=["splunk", "kql", "elasticsearch"],
+        required=True,
+        help="Type of queries to validate",
+    )
     parser.add_argument("--directory", type=str, required=True, help="Directory containing query files")
     parser.add_argument(
         "--manifest",

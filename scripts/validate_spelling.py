@@ -37,7 +37,10 @@ def main() -> None:
         "--quiet-level=2",
     ]
 
-    ignore_file = repo_root / "config" / "codespell_ignore.txt"
+    ignore_file = repo_root / "config" / "spelling_allowlist.txt"
+    if not ignore_file.exists():
+        # Backward-compat fallback for older filename.
+        ignore_file = repo_root / "config" / "codespell_ignore.txt"
     if ignore_file.exists():
         command.append(f"--ignore-words={ignore_file}")  # optional ignore list for security vocab
 

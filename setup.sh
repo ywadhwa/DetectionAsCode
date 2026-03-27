@@ -3,14 +3,14 @@
 
 set -e
 
-echo "🔍 Detection as Code Pipeline Setup"
+echo "Detection as Code Pipeline Setup"
 echo "===================================="
 echo ""
 
 # Check Python version
 echo "Checking Python version..."
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is not installed. Please install Python 3.8 or higher."
+    echo "Python 3 is not installed. Please install Python 3.8 or higher."
     exit 1
 fi
 
@@ -26,7 +26,7 @@ pip3 install -r requirements.txt
 echo ""
 echo "Checking Sigma CLI..."
 if ! command -v sigma &> /dev/null; then
-    echo "⚠️  Sigma CLI not found in PATH. It should have been installed via requirements.txt"
+    echo "Sigma CLI not found in PATH. It should have been installed via requirements.txt"
     echo "   Try: pip3 install sigma-cli"
 else
     echo "✓ Sigma CLI found"
@@ -43,12 +43,12 @@ echo "Setting up scripts..."
 chmod +x scripts/*.py
 
 echo ""
-echo "✅ Setup complete!"
+echo "Setup complete."
 echo ""
 echo "Next steps:"
 echo "1. Add your Sigma rules to sigma-rules/<category>/"
-echo "2. Validate rules: python3 scripts/validate_sigma_syntax.py"
-echo "3. Convert to queries: python3 scripts/convert_sigma.py --backend splunk"
+echo "2. Run full validation: ./scripts/validate.sh"
+echo "3. Convert to Elasticsearch bundle: python3 scripts/convert_sigma.py --backend elasticsearch --bundle-output output/elasticsearch/elasticsearch_bundle_\$(date +%Y%m%d_%H%M%S).json"
 echo "4. Push to GitHub to trigger the CI/CD pipeline"
 echo ""
 echo "For more information, see README.md"

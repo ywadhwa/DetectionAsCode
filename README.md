@@ -1,6 +1,6 @@
 # Detection as Code
 
-A Detection as Code (DaC) repository for managing Sigma rules with automated linting, validation, and conversion to Splunk and KQL queries.
+A Detection as Code (DaC) repository for managing Sigma rules with automated linting, validation, and conversion to Splunk, KQL, and Elasticsearch/Lucene queries.
 
 ## Features
 
@@ -113,13 +113,15 @@ This repository supports both **GitHub Actions** and **Azure DevOps Pipelines**:
 ### Pipeline Stages
 
 1. **Lint** - Validate Sigma rule syntax, naming, metadata, schemas, and spelling
-2. **Convert** - Generate Splunk and KQL queries from Sigma rules
-3. **Report** - Generate detection coverage report
-4. **Docs** - Generate documentation and changelog (main/dev branches only)
+2. **Convert** - Generate Elasticsearch/Lucene queries from Sigma rules
+3. **Test-Elasticsearch** - Compile and execute generated Elasticsearch queries against test data
+4. **Report** - Generate detection coverage report
+5. **Docs** - Generate documentation and changelog (`main` push only)
+6. **Run-Summary** - Aggregate job results and match counts into a single workflow summary
 
 ### Triggers
 
-- **Push to `main` or `dev/*`**: Runs when `sigma-rules/**` files change
+- **Push to `main` or `dev/*`**: Runs when `sigma-rules/**`, `scripts/**`, `docker/**`, `tests/**`, `requirements.txt`, or workflow files change
 - **Pull Requests**: Runs when `sigma-rules/**`, `scripts/**`, or workflow files change
 - **Manual**: Can be triggered manually via workflow dispatch
 

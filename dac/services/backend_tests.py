@@ -32,6 +32,19 @@ def _match_expectation(expectations: Dict[str, Dict[str, int]], query_file: Path
     return expectations.get(str(query_file)) or expectations.get(query_file.name)
 
 
+def _expectation_error(expectation: Optional[Dict[str, int]], row_count: int) -> Optional[str]:
+    """Return an expectation mismatch message, or None when row_count is acceptable."""
+    if not expectation:
+        return None
+    min_expected = expectation.get("min", 0)
+    max_expected = expectation.get("max")
+    if row_count < min_expected:
+        return f"expected >= {min_expected}, got {row_count}"
+    if max_expected is not None and row_count > max_expected:
+        return f"expected <= {max_expected}, got {row_count}"
+    return None
+
+
 def _load_query_files(directory: Path, suffix: str) -> List[Path]:
     return [
         f
@@ -200,17 +213,12 @@ def run_splunk_tests(
             failures.append(f"{query_file}: {payload.get('error', 'Unknown error')}")
             continue
 
-        expectation = _match_expectation(expectations, query_file)
         result_count = int(payload.get("result_count", 0))
-        if expectation:
-            min_expected = expectation.get("min", 0)
-            max_expected = expectation.get("max")
-            if result_count < min_expected:
-                failures.append(f"{query_file}: expected >= {min_expected}, got {result_count}")
-                continue
-            if max_expected is not None and result_count > max_expected:
-                failures.append(f"{query_file}: expected <= {max_expected}, got {result_count}")
-                continue
+        expectation = _match_expectation(expectations, query_file)
+        mismatch = _expectation_error(expectation, result_count)
+        if mismatch:
+            failures.append(f"{query_file}: {mismatch}")
+            continue
 
         passed += 1
 
@@ -317,21 +325,14 @@ def run_kql_tests(
                 results_by_file.append(file_result)
                 continue
 
-            expectation = _match_expectation(expectations, query_file)
             row_count = int(execute_result.get("metrics", {}).get("row_count", 0))
-            if expectation:
-                min_expected = expectation.get("min", 0)
-                max_expected = expectation.get("max")
-                if row_count < min_expected:
-                    execution_failures += 1
-                    failures.append(f"{query_file}: expected >= {min_expected}, got {row_count}")
-                    results_by_file.append(file_result)
-                    continue
-                if max_expected is not None and row_count > max_expected:
-                    execution_failures += 1
-                    failures.append(f"{query_file}: expected <= {max_expected}, got {row_count}")
-                    results_by_file.append(file_result)
-                    continue
+            expectation = _match_expectation(expectations, query_file)
+            mismatch = _expectation_error(expectation, row_count)
+            if mismatch:
+                execution_failures += 1
+                failures.append(f"{query_file}: {mismatch}")
+                results_by_file.append(file_result)
+                continue
 
         if not should_execute and should_compile and file_result["stages"].get("compile", {}).get("status") == "success":
             warnings.append(f"{query_file}: compile passed; execution not requested")
@@ -452,21 +453,14 @@ def run_elastic_tests(
                 results_by_file.append(file_result)
                 continue
 
-            expectation = _match_expectation(expectations, query_file)
             row_count = int(execute_result.get("metrics", {}).get("row_count", 0))
-            if expectation:
-                min_expected = expectation.get("min", 0)
-                max_expected = expectation.get("max")
-                if row_count < min_expected:
-                    execution_failures += 1
-                    failures.append(f"{query_file}: expected >= {min_expected}, got {row_count}")
-                    results_by_file.append(file_result)
-                    continue
-                if max_expected is not None and row_count > max_expected:
-                    execution_failures += 1
-                    failures.append(f"{query_file}: expected <= {max_expected}, got {row_count}")
-                    results_by_file.append(file_result)
-                    continue
+            expectation = _match_expectation(expectations, query_file)
+            mismatch = _expectation_error(expectation, row_count)
+            if mismatch:
+                execution_failures += 1
+                failures.append(f"{query_file}: {mismatch}")
+                results_by_file.append(file_result)
+                continue
 
         if not should_execute and should_compile and file_result["stages"].get("compile", {}).get("status") == "success":
             warnings.append(f"{query_file}: compile passed; execution not requested")

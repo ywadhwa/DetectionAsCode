@@ -9,6 +9,7 @@ on:
       - 'docker/**'
       - 'tests/**'
       - 'requirements.txt'
+      - 'constraints-ci.txt'
       - '.github/workflows/**'
   pull_request:
     branches: [main, 'dev/*']
@@ -20,6 +21,8 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -28,6 +31,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -c constraints-ci.txt
 
       - name: Check Sigma rules
         run: |
@@ -86,6 +91,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -96,7 +103,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -c constraints-ci.txt
 
       - name: Convert to Elasticsearch queries
         run: |
@@ -132,6 +139,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -148,7 +157,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -c constraints-ci.txt
 
       - name: Wait for Elasticsearch
         run: |
@@ -204,6 +213,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -220,7 +231,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -c constraints-ci.txt
 
       - name: Generate detection report
         run: python scripts/generate_report.py
@@ -254,7 +265,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -c constraints-ci.txt
 
       - name: Generate docs and changelog
         run: |

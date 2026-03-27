@@ -181,7 +181,7 @@ def validate_kql_query(query_text: str, config: AdxConfig, mode: str = "compile"
     """Compile/validate KQL against ADX using low-impact execution checks."""
     start = time.monotonic()
 
-    # TODO: finalize behavior once pipeline contract is stable.
+    # NOTE: keep result schema fields stable for pipeline artifact consumers.
     # ADX does not expose a simple dedicated compile endpoint in this repo today,
     # so compile mode executes with strict low row limit to force parser/binder validation.
     compile_limit = 0 if mode == "compile" else config.row_limit

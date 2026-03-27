@@ -331,7 +331,7 @@ def run_conversion(
             "repo_root": str(rr),
             "sigma_dir": str(sr),
             "output_arg": output,
-            # TODO: finalize behavior once pipeline contract is stable.
+            # NOTE: keep this context stable for pipeline artifact consumers.
         },
     )
 

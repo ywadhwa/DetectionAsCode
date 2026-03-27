@@ -1,0 +1,10 @@
+# CI constraints to reduce dependency drift on hosted runners.
+# Keep this aligned with requirements.txt when upgrading toolchain components.
+sigma-cli==2.0.1
+pySigma==1.2.0
+pySigma-backend-splunk==2.1.0
+pySigma-backend-microsoft365defender==0.3.2
+pySigma-backend-elasticsearch==2.0.2
+pySigma-pipeline-windows==2.0.0
+pySigma-pipeline-sysmon==2.0.0
+elasticsearch==8.19.2
