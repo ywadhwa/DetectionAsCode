@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-03-27 - fixed Elasticsearch Python client major-version mismatch
+## 2026-03-27 - added a final run-summary job for aggregation
 - Author: Yatin Wadhwa
-- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/4e4305ea623465a6ef12825112a879cbe9c1fcc0
+- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/80b5ac504c683d89c0c819fb18e20ba5d21f1ef4
 - other:
   - added: .dockerignore
   - added: .github/CODEOWNERS
