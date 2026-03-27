@@ -31,6 +31,7 @@ DetectionAsCode/
 ├── documentation/        # Generated documentation output
 ├── tests/                # Test fixtures and expected matches
 ├── docker/               # Splunk testing environment
+├── .github/workflows/    # GitHub Actions workflows
 ├── azure-pipelines.yml   # Azure DevOps pipeline definition
 ├── azure-pipelines/      # Pipeline templates
 └── ui/                   # Web UI for rule submissions
@@ -102,7 +103,27 @@ Major scripts now emit machine-readable JSON artifacts under `output/artifacts/`
 
 ## CI/CD
 
-CI/CD is handled in **Azure DevOps Pipelines**. The pipeline definition lives in `azure-pipelines.yml`, and reusable templates live under `azure-pipelines/templates/`. Local validation (`./scripts/validate.sh`) is the primary pre-PR check.
+This repository supports both **GitHub Actions** and **Azure DevOps Pipelines**:
+
+| Platform | Config | Status |
+|----------|--------|--------|
+| GitHub Actions | `.github/workflows/detection-pipeline.yml` | Recommended (free for public repos) |
+| Azure DevOps | `azure-pipelines.yml` + `azure-pipelines/` | Alternative option |
+
+### Pipeline Stages
+
+1. **Lint** - Validate Sigma rule syntax, naming, metadata, schemas, and spelling
+2. **Convert** - Generate Splunk and KQL queries from Sigma rules
+3. **Report** - Generate detection coverage report
+4. **Docs** - Generate documentation and changelog (main/dev branches only)
+
+### Triggers
+
+- **Push to `main` or `dev/*`**: Runs when `sigma-rules/**` files change
+- **Pull Requests**: Runs when `sigma-rules/**`, `scripts/**`, or workflow files change
+- **Manual**: Can be triggered manually via workflow dispatch
+
+Local validation (`./scripts/validate.sh`) is recommended before opening a PR.
 
 ## Git Workflow
 
