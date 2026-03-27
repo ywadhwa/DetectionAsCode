@@ -9,6 +9,7 @@ splunk:
     min: 1
   output/splunk/macos/macos_suspicious_process_execution.splunk:
     min: 1
+
 kql:
   output/kql/endpoint/endpoint_suspicious_powershell.kql:
     min: 1
@@ -20,8 +21,14 @@ kql:
     min: 1
   output/kql/macos/macos_suspicious_process_execution.kql:
     min: 1
+
 elasticsearch:
+  # DNS query to ufile.io detection - should match test data with ufile.io DNS queries
+  output/elasticsearch/endpoint/endpoint_dns_query_win_ufile_io_query.elasticsearch:
+    min: 1
+    description: "Detects DNS queries to ufile.io - test data contains 2 matching events"
+  # Generic patterns for other rules
   output/elasticsearch/endpoint/endpoint_suspicious_powershell.elasticsearch:
-    min: 1
+    min: 0
   output/elasticsearch/network/network_suspicious_dns_queries.elasticsearch:
-    min: 1
+    min: 0

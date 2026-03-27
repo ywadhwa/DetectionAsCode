@@ -1,38 +1,82 @@
-# Splunk Testing Environment
+# Testing Environment
 
-Docker-based Splunk instance for testing generated queries.
+Docker-based testing environments for validating generated queries against Elasticsearch and Splunk.
 
-## Quick Start
+## Elasticsearch (Primary)
+
+### Quick Start
+
+```bash
+# Start Elasticsearch
+docker-compose up -d elasticsearch
+
+# Wait for it to be healthy
+docker-compose ps
+
+# Load test data
+docker-compose --profile init up elasticsearch-init
+```
+
+### Access Elasticsearch
+
+- **API**: http://localhost:9200
+- **No authentication** (security disabled for testing)
+
+### Test Queries
+
+```bash
+# Validate query syntax (compile mode)
+python scripts/test_elastic_queries.py --mode compile --directory output/elasticsearch
+
+# Execute queries against test data
+python scripts/test_elastic_queries.py \
+  --host http://localhost:9200 \
+  --index security-events \
+  --mode execute \
+  --directory output/elasticsearch \
+  --expectations tests/expected_matches.yml
+
+# Run both compile and execute
+python scripts/test_elastic_queries.py --mode both --directory output/elasticsearch
+```
+
+### Test Data
+
+The Elasticsearch test data includes (loaded into `security-events` index):
+- Windows process creation events (Sysmon-like)
+- DNS query events (including ufile.io queries for detection testing)
+- Network connection events
+- AWS CloudTrail events
+- File creation events
+
+### Stop Elasticsearch
+
+```bash
+docker-compose down
+
+# Remove volumes (clean slate)
+docker-compose down -v
+```
+
+---
+
+## Splunk (Optional)
 
 ### Configure Environment
 
 ```bash
-# Copy the example environment file
 cp .env.example .env
-
-# Edit .env to set your credentials
-# SPLUNK_PASSWORD=your-secure-password
-# SPLUNK_HEC_TOKEN=your-hec-token
+# Edit .env to set SPLUNK_PASSWORD and SPLUNK_HEC_TOKEN
 ```
 
-### Start Splunk Instance
+### Start Splunk
 
 ```bash
-# Start Splunk (this will take a few minutes on first run)
-docker-compose up -d
+# Start Splunk (uses profile)
+docker-compose --profile splunk up -d
 
-# Wait for Splunk to be ready (check health status)
-docker-compose ps
-
-# View logs
-docker-compose logs -f splunk
-```
-
-### Load Test Data
-
-```bash
-# Load test data (runs after Splunk is healthy)
-docker-compose --profile init up splunk-init
+# Load test data
+docker-compose --profile splunk-init up splunk-init
 ```
 
 ### Access Splunk
@@ -46,55 +90,23 @@ docker-compose --profile init up splunk-init
 ### Test Queries
 
 ```bash
-# Test all queries
-python scripts/test_splunk_queries.py
-
-# Test specific query
-python scripts/test_splunk_queries.py --query output/splunk/endpoint/example.splunk
-
-# Custom Splunk instance
-python scripts/test_splunk_queries.py --host splunk.example.com --port 8089
+python scripts/test_splunk_queries.py --expectations tests/expected_matches.yml
 ```
 
-### Stop Splunk
-
-```bash
-docker-compose down
-
-# Remove volumes (clean slate)
-docker-compose down -v
-```
-
-## Configuration
-
-Edit `docker-compose.yml` to customize:
-- Splunk password
-- HEC token
-- Ports
-- Test data location
-
-## Test Data
-
-Test data is loaded via HEC (HTTP Event Collector) and includes:
-- Windows event logs (PowerShell execution, process creation)
-- AWS CloudTrail events
-- Sample security events
-
-You can add more test data by modifying `init-scripts/load-test-data.sh`.
+---
 
 ## Troubleshooting
 
-### Splunk not starting
-- Check logs: `docker-compose logs splunk`
-- Ensure ports 8000, 8088, 8089 are not in use
-- Wait for health check to pass (can take 2-3 minutes)
+### Elasticsearch not starting
+- Check logs: `docker-compose logs elasticsearch`
+- Ensure port 9200 is not in use
+- Wait for health check (can take 1-2 minutes)
 
 ### Queries not returning results
-- Verify test data was loaded: `docker-compose logs splunk-init`
-- Check index exists: Search in Splunk UI for `index=test_data`
-- Verify query syntax is correct
+- Verify test data was loaded: `curl http://localhost:9200/security-events/_count`
+- Check index mappings: `curl http://localhost:9200/security-events/_mapping`
+- Review query syntax matches ECS field names
 
-### Connection refused
-- Ensure Splunk container is running: `docker-compose ps`
-- Check firewall settings
-- Verify port mappings in docker-compose.yml
+### Memory issues
+- Elasticsearch needs at least 512MB heap
+- Adjust `ES_JAVA_OPTS` in docker-compose.yml if needed
