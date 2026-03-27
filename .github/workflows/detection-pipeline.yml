@@ -123,12 +123,6 @@ jobs:
           ES_JAVA_OPTS: -Xms512m -Xmx512m
         ports:
           - 9200:9200
-        options: >-
-          --health-cmd "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"
-          --health-interval 10s
-          --health-timeout 10s
-          --health-retries 30
-          --health-start-period 60s
 
     steps:
       - name: Checkout code
