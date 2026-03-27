@@ -21,6 +21,9 @@ def sigma_cli_target(backend: str) -> str:
     """Map repo backend label to sigma-cli target."""
     if backend == "kql":
         return "kusto"
+    if backend == "elasticsearch":
+        # sigma-cli v2 exposes Elasticsearch query-string backend as "lucene"
+        return "lucene"
     return backend
 
 
@@ -120,6 +123,9 @@ def convert_sigma_rule(rule_path: Path, backend: str, output_base: Path, timeout
     cmd = ["sigma", "convert", "--target", sigma_cli_target(backend)]
     if backend == "splunk":
         cmd.extend(["--pipeline", "splunk_windows"])
+    elif backend == "elasticsearch":
+        # sigma-cli v2 lucene backend requires a pipeline unless this flag is set.
+        cmd.append("--without-pipeline")
     cmd.append(str(rule_path))
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
