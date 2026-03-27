@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-03-27 - Applied timestamped bundle naming for both local and CI runs
+## 2026-03-27 - Cleaned up the repo
 - Author: Yatin Wadhwa
-- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/41d0c61abd3a657660dd4239ad93632759608174
+- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/59096d4d28c93700c06a798b4a2b7fff39b5fcb0
 - other:
   - added: .dockerignore
   - added: .github/CODEOWNERS
@@ -28,6 +28,7 @@
   - added: config/required_dirs.yml
   - added: config/schema_map.yml
   - added: config/spelling_allowlist.txt
+  - added: constraints-ci.txt
   - added: dac/__init__.py
   - added: dac/backends/__init__.py
   - added: dac/backends/adx.py
@@ -61,6 +62,8 @@
   - added: documentation/changelog.md
   - added: documentation/detections/endpoint_dns_query_win_ufile_io_query.md
   - added: documentation/index.md
+  - added: hunts/README.md
+  - added: jupyter_notebooks/README.md
   - added: requirements.txt
   - added: schemas/detection_meta.schema.json
   - added: schemas/sigma_rule.schema.json
@@ -93,6 +96,7 @@
   - added: tests/fixtures/README.md
   - added: tests/fixtures/sample_meta.yml
   - added: tests/fixtures/sample_rule.yml
+  - added: tests/test_conversion_and_validation.py
   - added: tests/test_schema_validation.py
   - added: tests/test_versioning.py
   - added: ui/README.md
