@@ -1,6 +1,7 @@
 # Main Azure Pipelines configuration
 # Uses modular templates for maintainability and reusability
 
+# Trigger on detection rule changes (automatic)
 trigger:
   branches:
     include:
@@ -9,9 +10,8 @@ trigger:
   paths:
     include:
       - sigma-rules/**
-      - azure-pipelines.yml
-      - azure-pipelines/**
 
+# PR validation for both rules and pipeline changes
 pr:
   branches:
     include:
@@ -20,6 +20,7 @@ pr:
   paths:
     include:
       - sigma-rules/**
+      - scripts/**
       - azure-pipelines.yml
       - azure-pipelines/**
 
