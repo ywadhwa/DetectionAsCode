@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-03-27 - testing azure pipeline
+## 2026-03-27 - fixed Elasticsearch Python client major-version mismatch
 - Author: Yatin Wadhwa
-- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/b5a9438a0de2125d3bad8a005514a86174829259
+- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/4e4305ea623465a6ef12825112a879cbe9c1fcc0
 - other:
   - added: .dockerignore
   - added: .github/CODEOWNERS
@@ -45,6 +45,8 @@
   - added: docker/.env.example
   - added: docker/README.md
   - added: docker/docker-compose.yml
+  - added: docker/init-scripts/ingest_ndjson_fixtures.py
+  - added: docker/init-scripts/load-elastic-test-data.sh
   - added: docker/init-scripts/load-test-data.sh
   - added: docs/AGENT_SETUP_CHECKLIST.md
   - added: docs/AZURE_DEVOPS_SETUP.md
@@ -56,6 +58,9 @@
   - added: docs/create-pipeline-steps.md
   - added: docs/git-workflow.md
   - added: documentation/README.md
+  - added: documentation/changelog.md
+  - added: documentation/detections/endpoint_dns_query_win_ufile_io_query.md
+  - added: documentation/index.md
   - added: requirements.txt
   - added: schemas/detection_meta.schema.json
   - added: schemas/sigma_rule.schema.json
@@ -85,6 +90,7 @@
   - added: setup.sh
   - added: templates/detection.md.j2
   - added: tests/expected_matches.yml
+  - added: tests/fixtures/README.md
   - added: tests/fixtures/sample_meta.yml
   - added: tests/fixtures/sample_rule.yml
   - added: tests/test_schema_validation.py
