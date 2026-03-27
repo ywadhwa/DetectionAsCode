@@ -26,55 +26,36 @@ pr:
 
 variables:
   pythonVersion: '3.11'
-  # Pool configuration for self-hosted Windows agent
-  # Using 'Default' agent pool
-  agentPoolName: 'Default'
+
+# Use Microsoft-hosted agents (free for public repos)
+pool:
+  vmImage: 'ubuntu-latest'
 
 # Include all stage templates
 stages:
   - template: azure-pipelines/templates/stages/lint-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
 
   - template: azure-pipelines/templates/stages/convert-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
       dependsOn: Lint
 
   - template: azure-pipelines/templates/stages/report-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
       dependsOn: Convert
 
   - template: azure-pipelines/templates/stages/docs-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
       dependsOn: Report
 
   # Test Splunk queries (only on dev/* and main branches)
   - template: azure-pipelines/templates/stages/test-splunk-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
       dependsOn: Convert
       splunkHost: 'localhost'
       splunkPort: '8089'
@@ -86,10 +67,6 @@ stages:
   - template: azure-pipelines/templates/stages/test-kql-stage.yml
     parameters:
       pythonVersion: $(pythonVersion)
-      pool:
-        name: $(agentPoolName)
-        demands:
-          - Agent.OS -equals Windows_NT
       dependsOn: Convert
       kustoCluster: $(KUSTO_CLUSTER)
       kustoDatabase: $(KUSTO_DATABASE)

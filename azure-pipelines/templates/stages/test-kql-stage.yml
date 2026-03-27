@@ -1,10 +1,6 @@
 # Stage template for testing KQL queries against Azure Data Explorer
 parameters:
   pythonVersion: '3.11'
-  pool:
-    name: Default
-    demands:
-      - Agent.OS -equals Windows_NT
   dependsOn: Convert
   kustoCluster: ''
   kustoDatabase: ''
@@ -15,16 +11,12 @@ parameters:
   kustoUseManagedIdentity: 'false'
   kustoQueryTimeout: '30'
   kustoRowLimit: '1000'
-  enabledBranches:
-    - 'refs/heads/dev/'
-    - 'refs/heads/main'
 
 stages:
   - stage: TestKql
     displayName: 'Test KQL Queries'
     dependsOn: ${{ parameters.dependsOn }}
     condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/dev/'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
-    pool: ${{ parameters.pool }}
     jobs:
       - job: TestKqlQueries
         displayName: 'Test KQL Queries'
@@ -41,64 +33,58 @@ stages:
             parameters:
               pythonVersion: ${{ parameters.pythonVersion }}
 
-          - task: PowerShell@2
+          - script: |
+              pip install requests pyyaml
+              pip install -r requirements.txt
             displayName: 'Install test dependencies'
-            inputs:
-              targetType: 'inline'
-              script: |
-                pip install requests pyyaml
-                pip install -r requirements.txt
 
-          - task: PowerShell@2
+          - script: |
+              if [ -z "${{ parameters.kustoCluster }}" ] || [ -z "${{ parameters.kustoDatabase }}" ]; then
+                echo "Kusto cluster and database are required"
+                exit 1
+              fi
+              
+              manifest=$(find output -name "conversion_manifest.kql.json" 2>/dev/null | head -1)
+              manifest_arg=""
+              if [ -n "$manifest" ]; then
+                echo "Using manifest: $manifest"
+                manifest_arg="--manifest $manifest"
+              else
+                echo "No KQL conversion manifest found; falling back to directory scan."
+              fi
+              
+              managed_identity_arg=""
+              if [ "${{ parameters.kustoUseManagedIdentity }}" = "true" ]; then
+                managed_identity_arg="--use-managed-identity"
+              fi
+              
+              python scripts/test_kql_queries.py \
+                --cluster "${{ parameters.kustoCluster }}" \
+                --database "${{ parameters.kustoDatabase }}" \
+                --token "${{ parameters.kustoToken }}" \
+                --tenant-id "${{ parameters.kustoTenantId }}" \
+                --client-id "${{ parameters.kustoClientId }}" \
+                --client-secret "${{ parameters.kustoClientSecret }}" \
+                --timeout "${{ parameters.kustoQueryTimeout }}" \
+                --row-limit "${{ parameters.kustoRowLimit }}" \
+                --mode both \
+                --directory output/kql \
+                --expectations tests/expected_matches.yml \
+                --artifact-output output/artifacts/kql-testing.json \
+                $manifest_arg \
+                $managed_identity_arg
             displayName: 'Test KQL queries'
-            inputs:
-              targetType: 'inline'
-              script: |
-                if (-not '${{ parameters.kustoCluster }}' -or -not '${{ parameters.kustoDatabase }}') {
-                  Write-Error "Kusto cluster and database are required"
-                  exit 1
-                }
-                $manifest = Get-ChildItem -Path output -Recurse -Filter "conversion_manifest.kql.json" -ErrorAction SilentlyContinue | Select-Object -First 1
-                $manifestArg = ""
-                if ($manifest) {
-                  Write-Host "Using manifest: $($manifest.FullName)"
-                  $manifestArg = "--manifest `"$($manifest.FullName)`""
-                } else {
-                  Write-Host "No KQL conversion manifest found; falling back to directory scan."
-                }
-                $managedIdentityArg = ""
-                if ("${{ parameters.kustoUseManagedIdentity }}" -eq "true") {
-                  $managedIdentityArg = "--use-managed-identity"
-                }
-                python scripts/test_kql_queries.py `
-                  --cluster "${{ parameters.kustoCluster }}" `
-                  --database "${{ parameters.kustoDatabase }}" `
-                  --token "${{ parameters.kustoToken }}" `
-                  --tenant-id "${{ parameters.kustoTenantId }}" `
-                  --client-id "${{ parameters.kustoClientId }}" `
-                  --client-secret "${{ parameters.kustoClientSecret }}" `
-                  --timeout "${{ parameters.kustoQueryTimeout }}" `
-                  --row-limit "${{ parameters.kustoRowLimit }}" `
-                  --mode both `
-                  --directory output/kql `
-                  --expectations tests/expected_matches.yml `
-                  --artifact-output output/artifacts/kql-testing.json `
-                  $manifestArg `
-                  $managedIdentityArg
 
-          - task: PowerShell@2
+          - script: |
+              if [ -n "$KUSTO_LANGUAGE_DLL" ] && [ -n "$KUSTO_SERVICES_DLL" ]; then
+                python scripts/validate_kql_dotnet.py \
+                  --kusto-dll "$KUSTO_LANGUAGE_DLL" \
+                  --services-dll "$KUSTO_SERVICES_DLL" \
+                  --file-dir output/kql
+              else
+                echo "Skipping Kusto.Language validation (DLL paths not set)"
+              fi
             displayName: 'Validate KQL with Kusto.Language'
-            inputs:
-              targetType: 'inline'
-              script: |
-                if ($env:KUSTO_LANGUAGE_DLL -and $env:KUSTO_SERVICES_DLL) {
-                  python scripts/validate_kql_dotnet.py `
-                    --kusto-dll "$env:KUSTO_LANGUAGE_DLL" `
-                    --services-dll "$env:KUSTO_SERVICES_DLL" `
-                    --file-dir output/kql
-                } else {
-                  Write-Host "Skipping Kusto.Language validation (DLL paths not set)"
-                }
 
           - task: PublishPipelineArtifact@1
             displayName: 'Publish KQL test artifacts'

@@ -1,15 +1,10 @@
 # Stage template for linting Sigma rules
 parameters:
   pythonVersion: '3.11'
-  pool:
-    name: Default
-    demands:
-      - Agent.OS -equals Windows_NT
 
 stages:
   - stage: Lint
     displayName: 'Lint Sigma Rules'
-    pool: ${{ parameters.pool }}
     jobs:
       - job: LintSigmaRules
         displayName: 'Lint Sigma Rules'
@@ -18,110 +13,67 @@ stages:
             parameters:
               pythonVersion: ${{ parameters.pythonVersion }}
 
-          - task: PowerShell@2
+          - script: |
+              python -m pip install --upgrade pip
+              pip install sigmatools ruamel.yaml pyyaml
+              pip install -r requirements.txt
             displayName: 'Install Sigma CLI'
-            inputs:
-              targetType: 'inline'
-              script: |
-                python -m pip install --upgrade pip
-                pip install sigmatools
-                pip install ruamel.yaml
-                pip install pyyaml
-                pip install -r requirements.txt
 
-          - task: PowerShell@2
+          - script: |
+              echo "Linting all Sigma rules..."
+              find sigma-rules -name "*.yml" -o -name "*.yaml" | while read file; do
+                echo "Checking: $file"
+                sigma lint "$file" || exit 1
+              done
             displayName: 'Lint Sigma rules'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Linting all Sigma rules..."
-                $files = Get-ChildItem -Path sigma-rules -Recurse -Include *.yml,*.yaml
-                foreach ($file in $files) {
-                  Write-Host "Checking: $($file.FullName)"
-                  sigma lint $file.FullName
-                  if ($LASTEXITCODE -ne 0) {
-                    exit 1
-                  }
-                }
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating Sigma rule syntax..."
+              python scripts/validate_sigma_syntax.py
             displayName: 'Validate Sigma rule syntax'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating Sigma rule syntax..."
-                python scripts/validate_sigma_syntax.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating file naming conventions..."
+              python scripts/validate_file_naming.py
             displayName: 'Validate file naming conventions'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating file naming conventions..."
-                python scripts/validate_file_naming.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating rule metadata..."
+              python scripts/validate_rule_metadata.py
             displayName: 'Validate rule metadata'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating rule metadata..."
-                python scripts/validate_rule_metadata.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating detection quality..."
+              python scripts/validate_detection_quality.py
             displayName: 'Validate detection quality'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating detection quality..."
-                python scripts/validate_detection_quality.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating schemas..."
+              python scripts/validate_schema.py
             displayName: 'Validate schemas'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating schemas..."
-                python scripts/validate_schema.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating references..."
+              python scripts/validate_links.py
             displayName: 'Validate references'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating references..."
-                python scripts/validate_links.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating spelling..."
+              python scripts/validate_spelling.py
             displayName: 'Validate spelling'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating spelling..."
-                python scripts/validate_spelling.py
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating repository structure..."
+              python scripts/validate_repo_structure.py
             displayName: 'Validate repository structure'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating repository structure..."
-                python scripts/validate_repo_structure.py
 
-          - task: PowerShell@2
+          - script: pytest -q
             displayName: 'Run unit tests'
-            inputs:
-              targetType: 'inline'
-              script: |
-                pytest -q
 
-          - task: PowerShell@2
+          - script: |
+              echo "Validating versioning..."
+              git fetch origin $(System.PullRequest.TargetBranch) --depth=1
+              export BASE_REF="$(System.PullRequest.TargetBranch)"
+              python scripts/validate_versions.py
             displayName: 'Validate versioning'
             condition: eq(variables['Build.Reason'], 'PullRequest')
-            inputs:
-              targetType: 'inline'
-              script: |
-                Write-Host "Validating versioning..."
-                git fetch origin $(System.PullRequest.TargetBranch) --depth=1
-                $env:BASE_REF = "$(System.PullRequest.TargetBranch)"
-                python scripts/validate_versions.py

@@ -1,17 +1,12 @@
 # Stage template for generating detection report
 parameters:
   pythonVersion: '3.11'
-  pool:
-    name: Default
-    demands:
-      - Agent.OS -equals Windows_NT
   dependsOn: Convert
 
 stages:
   - stage: Report
     displayName: 'Generate Detection Report'
     dependsOn: ${{ parameters.dependsOn }}
-    pool: ${{ parameters.pool }}
     jobs:
       - job: GenerateReport
         displayName: 'Generate Detection Report'
@@ -28,12 +23,8 @@ stages:
             parameters:
               pythonVersion: ${{ parameters.pythonVersion }}
 
-          - task: PowerShell@2
+          - script: python scripts/generate_report.py
             displayName: 'Generate detection report'
-            inputs:
-              targetType: 'inline'
-              script: |
-                python scripts/generate_report.py
 
           - task: PublishPipelineArtifact@1
             displayName: 'Upload report'
