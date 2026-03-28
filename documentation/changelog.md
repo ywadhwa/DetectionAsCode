@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-03-27 - Cleaned up the repo
+## 2026-03-27 - Implemented a new optional advanced KQL validator
 - Author: Yatin Wadhwa
-- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/59096d4d28c93700c06a798b4a2b7fff39b5fcb0
+- Commit: https://github.com/ywadhwa/DetectionAsCode/commit/3462d7460d58a48651336606395d7e4d438a1346
 - other:
   - added: .dockerignore
   - added: .github/CODEOWNERS
@@ -81,6 +81,7 @@
   - added: scripts/validate.sh
   - added: scripts/validate_detection_quality.py
   - added: scripts/validate_file_naming.py
+  - added: scripts/validate_kql_advanced.py
   - added: scripts/validate_kql_dotnet.py
   - added: scripts/validate_links.py
   - added: scripts/validate_queries.py
@@ -97,6 +98,7 @@
   - added: tests/fixtures/sample_meta.yml
   - added: tests/fixtures/sample_rule.yml
   - added: tests/test_conversion_and_validation.py
+  - added: tests/test_kql_advanced_validation.py
   - added: tests/test_schema_validation.py
   - added: tests/test_versioning.py
   - added: ui/README.md
