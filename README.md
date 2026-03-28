@@ -124,6 +124,18 @@ Major scripts now emit machine-readable JSON artifacts under `output/artifacts/`
 
 `scripts/convert_sigma.py` now writes a backend conversion manifest (`conversion_manifest.<backend>.json`) and per-rule manifests. Downstream scripts can use `--manifest` to validate/test only generated outputs.
 
+### Rule Changelog
+
+Generate a git-based changelog for Sigma rule changes:
+
+```bash
+python scripts/generate_changelog.py --bucket month
+```
+
+Default outputs:
+- `documentation/changelog.md`
+- `documentation/changelog.json`
+
 ## CI/CD
 
 This repository supports both **GitHub Actions** and **Azure DevOps Pipelines**:
