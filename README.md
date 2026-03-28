@@ -83,6 +83,22 @@ export KUSTO_DATABASE="dfir"
 python scripts/test_kql_queries.py --mode both --directory output/kql --expectations tests/expected_matches.yml
 ```
 
+### Optional: Advanced KQL Validation via `Kusto.Language.dll`
+
+If you want stronger KQL syntax/semantic validation than the lightweight offline checks, you can run the optional advanced validator locally with `pythonnet` and the required Kusto DLLs:
+
+```bash
+python scripts/validate_kql_advanced.py \
+  --directory output/kql \
+  --kusto-dll /path/to/Kusto.Language.dll \
+  --services-dll /path/to/Microsoft.Azure.Sentinel.KustoServices.dll
+```
+
+Notes:
+- This is optional and is not part of the default local workflow or GitHub Actions.
+- It validates generated `.kql` files using `KustoCode.ParseAndAnalyze(...)`.
+- `pythonnet` and the required DLLs must be installed separately on your machine.
+
 ### Optional: Elasticsearch Testing
 
 ```bash

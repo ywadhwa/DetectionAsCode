@@ -25,7 +25,7 @@ def validate_sigma_rule(file_path: Path) -> tuple[bool, List[str]]:
             return False, ["Rule file is empty"]
         
         # Required fields
-        required_fields = ['title', 'id', 'description', 'detection', 'logsource']
+        required_fields = ['title', 'id', 'description', 'detection', 'logsource', 'version', 'tags', 'references']
         for field in required_fields:
             if field not in rule:
                 errors.append(f"Missing required field: {field}")

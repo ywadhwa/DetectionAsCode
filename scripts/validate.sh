@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euo pipefail # Exit immediately on errors, treat unset variables as errors, and fail pipelines if any command fails
 
 # Set up paths relative to the script location
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
