@@ -61,6 +61,13 @@ Run the full validation suite before opening a PR:
 ./scripts/validate.sh
 ```
 
+Validation roles are intentionally split:
+- `validate_sigma_syntax.py`: YAML parsing and basic Sigma structure only
+- `validate_rule_metadata.py`: required metadata fields, tags, version, status, and level policy
+- `validate_detection_quality.py`: log source completeness, detection structure, and false-positive guidance
+- `validate_schema.py`: JSON schema contract checks
+- `sigma check`: Sigma standard validation
+
 ### Optional: Splunk Testing
 
 ```bash
@@ -137,8 +144,8 @@ This repository supports both **GitHub Actions** and **Azure DevOps Pipelines**:
 
 ### Triggers
 
-- **Push to `main` or `dev/*`**: Runs when `sigma-rules/**`, `scripts/**`, `docker/**`, `tests/**`, `requirements.txt`, or workflow files change
-- **Pull Requests**: Runs when `sigma-rules/**`, `scripts/**`, or workflow files change
+- **Push to `main` or `dev/*`**: Runs when Sigma YAML files under `sigma-rules/` change
+- **Pull Requests**: Runs when Sigma YAML files under `sigma-rules/` change
 - **Manual**: Can be triggered manually via workflow dispatch
 
 Local validation (`./scripts/validate.sh`) is recommended before opening a PR.
